@@ -1,0 +1,351 @@
+{
+  "projectName": "meu-projeto",
+  "framework": "React 18 + TypeScript + Vite + Tailwind CSS",
+  "updatedAt": 1791567903242,
+  "domain": {
+    "title": "Controle de Faltas",
+    "tagline": "",
+    "description": "Aplicação SPA modular desenvolvida sob medida com Vite, React, TypeScript e Tailwind CSS.",
+    "dataEntities": [],
+    "features": []
+  },
+  "components": [
+    {
+      "relPath": "src/App.tsx",
+      "name": "App",
+      "imports": [
+        "src/components/Navbar.tsx",
+        "src/components/MetricsHeader.tsx",
+        "src/components/VehicleCardGrid.tsx",
+        "src/components/CollaboratorsManagement.tsx",
+        "src/components/TeamsManagement.tsx",
+        "src/components/ExportReports.tsx",
+        "src/components/NewTeamModal.tsx",
+        "src/data/mockData.ts",
+        "src/types/index.ts"
+      ],
+      "importedBy": [
+        "src/main.tsx"
+      ],
+      "description": "Componente raiz da aplicação (orquestra layout, estado global e todas as seções)",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/components/AttendanceModal.tsx",
+      "name": "AttendanceModal",
+      "imports": [
+        "src/components/ui/button.tsx",
+        "src/components/ui/badge.tsx",
+        "src/types/index.ts",
+        "src/data/mockData.ts",
+        "src/lib/utils.ts"
+      ],
+      "importedBy": [
+        "src/components/VehicleCardGrid.tsx"
+      ],
+      "description": "Modal/Dialog interativo (AttendanceModal)",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/components/CollaboratorsManagement.tsx",
+      "name": "CollaboratorsManagement",
+      "imports": [
+        "src/components/ui/card.tsx",
+        "src/components/ui/badge.tsx",
+        "src/components/ui/input.tsx",
+        "src/components/ui/button.tsx",
+        "src/lib/utils.ts",
+        "src/types/index.ts"
+      ],
+      "importedBy": [
+        "src/App.tsx"
+      ],
+      "description": "Componente React modular (CollaboratorsManagement)",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/components/ComponentShowcase.tsx",
+      "name": "ComponentShowcase",
+      "imports": [
+        "src/components/VehicleTopView.tsx",
+        "src/data/mockData.ts",
+        "src/types/index.ts"
+      ],
+      "importedBy": [],
+      "description": "Componente React modular (ComponentShowcase)",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/components/ExportReports.tsx",
+      "name": "ExportReports",
+      "imports": [
+        "src/components/ui/card.tsx",
+        "src/components/ui/button.tsx",
+        "src/components/ui/badge.tsx",
+        "src/types/index.ts",
+        "src/lib/utils.ts"
+      ],
+      "importedBy": [
+        "src/App.tsx"
+      ],
+      "description": "Componente React modular (ExportReports)",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/components/MetricsHeader.tsx",
+      "name": "MetricsHeader",
+      "imports": [
+        "src/types/index.ts",
+        "src/components/ui/button.tsx",
+        "src/lib/utils.ts"
+      ],
+      "importedBy": [
+        "src/App.tsx"
+      ],
+      "description": "Cabeçalho e barra de navegação global com links e ações",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/components/Navbar.tsx",
+      "name": "Navbar",
+      "imports": [
+        "src/types/index.ts",
+        "src/components/ui/badge.tsx",
+        "src/lib/utils.ts"
+      ],
+      "importedBy": [
+        "src/App.tsx"
+      ],
+      "description": "Cabeçalho e barra de navegação global com links e ações",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/components/NewTeamModal.tsx",
+      "name": "NewTeamModal",
+      "imports": [
+        "src/components/ui/button.tsx",
+        "src/components/ui/input.tsx",
+        "src/types/index.ts"
+      ],
+      "importedBy": [
+        "src/App.tsx"
+      ],
+      "description": "Modal/Dialog interativo (NewTeamModal)",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/components/TeamsManagement.tsx",
+      "name": "TeamsManagement",
+      "imports": [
+        "src/components/ui/card.tsx",
+        "src/components/ui/badge.tsx",
+        "src/components/ui/button.tsx",
+        "src/components/ui/input.tsx",
+        "src/types/index.ts",
+        "src/lib/utils.ts"
+      ],
+      "importedBy": [
+        "src/App.tsx"
+      ],
+      "description": "Componente React modular (TeamsManagement)",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/components/ui/badge.tsx",
+      "name": "badge",
+      "imports": [
+        "src/lib/utils.ts"
+      ],
+      "importedBy": [
+        "src/components/AttendanceModal.tsx",
+        "src/components/CollaboratorsManagement.tsx",
+        "src/components/ExportReports.tsx",
+        "src/components/Navbar.tsx",
+        "src/components/TeamsManagement.tsx",
+        "src/components/VehicleCardGrid.tsx"
+      ],
+      "description": "Componente base de UI reutilizável (badge)",
+      "isUiBase": true
+    },
+    {
+      "relPath": "src/components/ui/button.tsx",
+      "name": "button",
+      "imports": [
+        "src/lib/utils.ts"
+      ],
+      "importedBy": [
+        "src/components/AttendanceModal.tsx",
+        "src/components/CollaboratorsManagement.tsx",
+        "src/components/ExportReports.tsx",
+        "src/components/MetricsHeader.tsx",
+        "src/components/NewTeamModal.tsx",
+        "src/components/TeamsManagement.tsx",
+        "src/components/VehicleCardGrid.tsx"
+      ],
+      "description": "Componente base de UI reutilizável (button)",
+      "isUiBase": true
+    },
+    {
+      "relPath": "src/components/ui/card.tsx",
+      "name": "card",
+      "imports": [
+        "src/lib/utils.ts"
+      ],
+      "importedBy": [
+        "src/components/CollaboratorsManagement.tsx",
+        "src/components/ExportReports.tsx",
+        "src/components/TeamsManagement.tsx",
+        "src/components/VehicleCardGrid.tsx"
+      ],
+      "description": "Componente base de UI reutilizável (card)",
+      "isUiBase": true
+    },
+    {
+      "relPath": "src/components/ui/input.tsx",
+      "name": "input",
+      "imports": [
+        "src/lib/utils.ts"
+      ],
+      "importedBy": [
+        "src/components/CollaboratorsManagement.tsx",
+        "src/components/NewTeamModal.tsx",
+        "src/components/TeamsManagement.tsx",
+        "src/components/VehicleCardGrid.tsx"
+      ],
+      "description": "Componente base de UI reutilizável (input)",
+      "isUiBase": true
+    },
+    {
+      "relPath": "src/components/VehicleCardGrid.tsx",
+      "name": "VehicleCardGrid",
+      "imports": [
+        "src/types/index.ts",
+        "src/components/VehicleTopView.tsx",
+        "src/components/AttendanceModal.tsx",
+        "src/components/ui/card.tsx",
+        "src/components/ui/badge.tsx",
+        "src/components/ui/input.tsx",
+        "src/components/ui/button.tsx",
+        "src/lib/utils.ts"
+      ],
+      "importedBy": [
+        "src/App.tsx"
+      ],
+      "description": "Grid/Catálogo interativo de produtos com filtros e cards",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/components/VehicleTopView.tsx",
+      "name": "VehicleTopView",
+      "imports": [
+        "src/types/index.ts",
+        "src/lib/utils.ts"
+      ],
+      "importedBy": [
+        "src/components/ComponentShowcase.tsx",
+        "src/components/VehicleCardGrid.tsx"
+      ],
+      "description": "Componente React modular (VehicleTopView)",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/data/mockData.ts",
+      "name": "mockData",
+      "imports": [
+        "src/types/index.ts"
+      ],
+      "importedBy": [
+        "src/App.tsx",
+        "src/components/AttendanceModal.tsx",
+        "src/components/ComponentShowcase.tsx"
+      ],
+      "description": "Componente React modular (mockData)",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/lib/utils.ts",
+      "name": "utils",
+      "imports": [],
+      "importedBy": [
+        "src/components/AttendanceModal.tsx",
+        "src/components/CollaboratorsManagement.tsx",
+        "src/components/ExportReports.tsx",
+        "src/components/MetricsHeader.tsx",
+        "src/components/Navbar.tsx",
+        "src/components/TeamsManagement.tsx",
+        "src/components/ui/badge.tsx",
+        "src/components/ui/button.tsx",
+        "src/components/ui/card.tsx",
+        "src/components/ui/input.tsx",
+        "src/components/VehicleCardGrid.tsx",
+        "src/components/VehicleTopView.tsx"
+      ],
+      "description": "Componente React modular (utils)",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/main.tsx",
+      "name": "main",
+      "imports": [
+        "src/App.tsx"
+      ],
+      "importedBy": [],
+      "description": "Host de montagem React DOM da SPA (#root)",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/types/index.ts",
+      "name": "index",
+      "imports": [],
+      "importedBy": [
+        "src/App.tsx",
+        "src/components/AttendanceModal.tsx",
+        "src/components/CollaboratorsManagement.tsx",
+        "src/components/ComponentShowcase.tsx",
+        "src/components/ExportReports.tsx",
+        "src/components/MetricsHeader.tsx",
+        "src/components/Navbar.tsx",
+        "src/components/NewTeamModal.tsx",
+        "src/components/TeamsManagement.tsx",
+        "src/components/VehicleCardGrid.tsx",
+        "src/components/VehicleTopView.tsx",
+        "src/data/mockData.ts"
+      ],
+      "description": "Componente React modular (index)",
+      "isUiBase": false
+    }
+  ],
+  "structure": [
+    ".codein/context.json",
+    ".codein/history.json",
+    ".codein/state.json",
+    "capacitor.config.ts",
+    "index.html",
+    "package-lock.json",
+    "package.json",
+    "postcss.config.js",
+    "src/App.tsx",
+    "src/components/AttendanceModal.tsx",
+    "src/components/CollaboratorsManagement.tsx",
+    "src/components/ComponentShowcase.tsx",
+    "src/components/ExportReports.tsx",
+    "src/components/MetricsHeader.tsx",
+    "src/components/Navbar.tsx",
+    "src/components/NewTeamModal.tsx",
+    "src/components/TeamsManagement.tsx",
+    "src/components/ui/badge.tsx",
+    "src/components/ui/button.tsx",
+    "src/components/ui/card.tsx",
+    "src/components/ui/input.tsx",
+    "src/components/VehicleCardGrid.tsx",
+    "src/components/VehicleTopView.tsx",
+    "src/data/mockData.ts",
+    "src/index.css",
+    "src/lib/utils.ts",
+    "src/main.tsx",
+    "src/types/index.ts",
+    "tailwind.config.js",
+    "tsconfig.json",
+    "vite.config.ts"
+  ]
+}
