@@ -3,21 +3,35 @@
   "framework": "React 18 + Vite + Tailwind CSS",
   "architecturalDecisions": [],
   "activeWorkingSet": [
+    "src/data/mockData.ts",
+    "src/components/AttendanceModal.tsx",
+    "src/components/CollaboratorsManagement.tsx",
+    "src/components/ExportReports.tsx",
     "src/index.css",
     "src/components/Navbar.tsx",
     "src/App.tsx",
-    "src/components/CollaboratorsManagement.tsx",
     "src/components/MetricsHeader.tsx",
     "src/components/TeamsManagement.tsx",
     "src/components/VehicleCardGrid.tsx",
-    "src/components/ExportReports.tsx",
     "src/components/NewTeamModal.tsx",
-    "src/components/AttendanceModal.tsx",
-    "src/data/mockData.ts",
     "src/components/ComponentShowcase.tsx",
     "src/components/VehicleTopView.tsx"
   ],
   "commitLedger": [
+    {
+      "id": "MGt85RuYLRJ5SOnK6hYwE",
+      "timestamp": 1791570698540,
+      "prompt": "corrigir erro para publicar na vercel",
+      "summary": "Aqui estão as correções completas e ajustes estruturais para garantir que o projeto compile sem erros de TypeScript ou de build (`tsc && vite build`) e seja publicado perfeitamente na Vercel. ```ts:s",
+      "filesCreated": [],
+      "filesModified": [
+        "src/data/mockData.ts",
+        "src/components/AttendanceModal.tsx",
+        "src/components/CollaboratorsManagement.tsx",
+        "src/components/ExportReports.tsx"
+      ],
+      "filesDeleted": []
+    },
     {
       "id": "tkGlA7oAVyv4RIoxr-u9O",
       "timestamp": 1791567903229,
@@ -369,20 +383,8 @@
         "src/components/ComponentShowcase.tsx"
       ],
       "filesDeleted": []
-    },
-    {
-      "id": "CDiWuHgznqr4XNUfLH0CA",
-      "timestamp": 1791405091930,
-      "prompt": "retirar a placa do carroque ficar encima do nome do colaborador",
-      "summary": "```tsx:src/components/VehicleTopView.tsx import React from 'react'; import { UserCheck, UserX, RefreshCw, User, ShieldCheck } from 'lucide-react'; import { Colaborador, StatusPresenca, Veiculo } from",
-      "filesCreated": [],
-      "filesModified": [
-        "src/components/VehicleTopView.tsx",
-        "src/components/VehicleCardGrid.tsx"
-      ],
-      "filesDeleted": []
     }
   ],
   "createdAt": 1791204952471,
-  "updatedAt": 1791567903230
+  "updatedAt": 1791570698541
 }

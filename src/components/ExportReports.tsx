@@ -159,279 +159,177 @@ export const ExportReports: React.FC<ExportReportsProps> = ({
 
   // Faltas do mês selecionado
   const faltasMesSelecionado = useMemo(() => {
-    const registroMes = HISTORICO_MENSAL_FALTAS.find((h) => h.mesIndex === selectedMonth);
-    if (!registroMes) return [];
-    if (unidadeFiltro === 'todas') return registroMes.faltas;
-    const regionalNome = unidadeFiltro === 'ribas' ? 'Ribas do Rio Pardo' : 'Água Clara';
-    return (registroMes.faltas || []).filter((f) => f.regional === regionalNome);
+    const dadosMes = HISTORICO_MENSAL_FALTAS.find((h) => h.mesIndex === selectedMonth);
+    if (!dadosMes) return [];
+    if (unidadeFiltro === 'todas') return dadosMes.faltas;
+    const labelFiltro = regionalLabel[unidadeFiltro];
+    return dadosMes.faltas.filter((f) => f.regional === labelFiltro);
   }, [selectedMonth, unidadeFiltro]);
 
-  // Exportação para CSV (Diário Operacional)
-  const exportarCSV = () => {
-    const cabecalho = ['Veiculo', 'Placa', 'Regional', 'Colaborador', 'Cargo', 'Matricula', 'Status', 'Motivo Falta', 'Substituto'];
-    const linhas = (todosColaboradores || []).map(({ colab, veiculo }) => [
-      `"${veiculo?.prefixo || ''}"`,
-      `"${veiculo?.placa || ''}"`,
-      `"${veiculo?.regional === 'ribas' ? 'Ribas do Rio Pardo' : 'Água Clara'}"`,
-      `"${colab?.nome || ''}"`,
-      `"${colab?.cargo || ''}"`,
-      `"${colab?.matricula || ''}"`,
-      `"${colab?.status?.toUpperCase() || ''}"`,
-      `"${colab?.motivoFalta || ''}"`,
-      `"${colab?.substitutoNome || ''}"`,
-    ]);
+  const handleExportCSV = () => {
+    let csv = `Relatório Operacional de Frequência\nData: ${dataFormatada}\nUnidade: ${regionalLabel[unidadeFiltro]}\n\n`;
+    csv += 'Veículo,Placa,Unidade,Colaborador,Cargo,Matrícula,Status,Motivo Falta,Substituto\n';
 
-    const csvContent = '\uFEFF' + [cabecalho.join(';'), ...linhas.map((l) => l.join(';'))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    todosColaboradores.forEach(({ colab, veiculo }) => {
+      csv += `"${veiculo.prefixo}","${veiculo.placa}","${regionalLabel[veiculo.regional]}","${colab.nome}","${colab.cargo}","${colab.matricula || ''}","${colab.status}","${colab.motivoFalta || ''}","${colab.substitutoNome || ''}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `relatorio-presenca-${unidadeFiltro}-${dataFormatada.replace(/\//g, '-')}.csv`);
+    link.setAttribute('download', `relatorio_frequencia_${dataFormatada.replace(/\//g, '-')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  // Impressão limpa e segura (PDF nativo sem erros de sandbox)
-  const handlePrint = () => {
-    window.print();
   };
 
   return (
     <div className="space-y-6">
-      {/* Header com Filtro de Unidade e Ações */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card/60 backdrop-blur-md p-5 rounded-2xl border border-border">
+      {/* Header com Filtros de Unidade e Ações */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-card/60 border border-border">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <h2 className="text-xl font-bold text-foreground">Relatório e Diário Operacional</h2>
-          </div>
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <FileSpreadsheet className="w-5 h-5 text-primary" />
+            Relatórios e Histórico de Faltas
+          </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Data de referência: <span className="text-foreground font-semibold">{dataFormatada}</span> • Unidade:{' '}
-            <span className="text-emerald-400 font-semibold">{regionalLabel[unidadeFiltro]}</span>
+            Visualize faltas diárias, absenteísmo acumulado por mês e exporte dados consolidados.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Seletor de Unidade */}
-          <div className="flex items-center gap-1.5 bg-muted/40 p-1 rounded-xl border border-border">
-            <Filter className="w-3.5 h-3.5 text-muted-foreground ml-2" />
-            <span className="text-xs font-medium text-muted-foreground pr-1">Unidade:</span>
-            {(['todas', 'ribas', 'agua_clara'] as const).map((reg) => (
-              <button
-                key={reg}
-                type="button"
-                onClick={() => setUnidadeFiltro(reg)}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer',
-                  unidadeFiltro === reg
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                )}
-              >
-                {reg === 'todas' ? 'Todas' : reg === 'ribas' ? 'Ribas' : 'Água Clara'}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <select
+            value={unidadeFiltro}
+            onChange={(e) => setUnidadeFiltro(e.target.value as Regional)}
+            className="h-9 px-3 text-xs bg-muted/50 border border-border rounded-xl text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="todas">Todas as Unidades</option>
+            <option value="ribas">Ribas do Rio Pardo</option>
+            <option value="agua_clara">Água Clara</option>
+          </select>
 
           <Button
-            onClick={exportarCSV}
-            variant="outline"
+            onClick={handleExportCSV}
             size="sm"
-            className="gap-2 h-9 rounded-xl border-border bg-card/50 hover:bg-muted/80 text-foreground"
+            className="gap-1.5 h-9 text-xs font-semibold shadow-md"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-400" />
+            <Download className="w-3.5 h-3.5" />
             Exportar CSV
           </Button>
 
           <Button
-            onClick={handlePrint}
+            variant="outline"
             size="sm"
-            className="gap-2 h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+            onClick={() => window.print()}
+            className="gap-1.5 h-9 text-xs font-medium border-border"
           >
-            <Printer className="w-3.5 h-3.5" />
-            Salvar em PDF / Imprimir
+            <Printer className="w-3.5 h-3.5 text-muted-foreground" />
+            Imprimir
           </Button>
         </div>
       </div>
 
-      {/* Cards de Métricas do Dia */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="border-border/60 bg-card/60">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-              <Car className="w-5 h-5 text-blue-400" />
+      {/* Visão de Faltas Diárias e Mensais */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Faltas do Dia */}
+        <Card className="border-border/80 bg-card/60">
+          <CardHeader className="pb-3 border-b border-border/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <UserX className="w-4 h-4 text-rose-400" />
+                  Faltas Registradas Hoje ({dataFormatada})
+                </CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  Colaboradores ausentes nas turmas no dia selecionado
+                </CardDescription>
+              </div>
+              <Badge variant="outline" className="text-xs text-rose-400 border-rose-500/30">
+                {faltasDoDia.length} ausência(s)
+              </Badge>
             </div>
-            <div>
-              <p className="text-[11px] text-muted-foreground font-medium">Veículos Operando</p>
-              <p className="text-xl font-bold text-foreground">{stats.totalVeiculos}</p>
-            </div>
+          </CardHeader>
+          <CardContent className="p-4 space-y-3">
+            {faltasDoDia.length === 0 ? (
+              <div className="text-center py-8 text-xs text-muted-foreground">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-80" />
+                Nenhuma falta registrada para hoje nesta unidade.
+              </div>
+            ) : (
+              faltasDoDia.map(({ colab, veiculo }) => (
+                <div
+                  key={colab.id}
+                  className="p-3 rounded-xl border border-rose-500/20 bg-rose-500/[0.04] flex items-center justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-foreground truncate">{colab.nome}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{colab.cargo} • {veiculo.prefixo}</p>
+                    <p className="text-[10px] text-rose-400 font-medium mt-0.5">
+                      Motivo: {colab.motivoFalta || 'Não informado'}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] border-border shrink-0">
+                    {regionalLabel[veiculo.regional]}
+                  </Badge>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-card/60">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-              <UserCheck className="w-5 h-5 text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-[11px] text-muted-foreground font-medium">Presentes</p>
-              <p className="text-xl font-bold text-emerald-400">
-                {stats.totalPresentes} <span className="text-xs font-normal text-muted-foreground">/ {stats.totalGeral}</span>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Histórico Mensal de Faltas */}
+        <Card className="border-border/80 bg-card/60">
+          <CardHeader className="pb-3 border-b border-border/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  Absenteísmo Mensal
+                </CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  Histórico acumulado de faltas por colaborador
+                </CardDescription>
+              </div>
 
-        <Card className="border-border/60 bg-card/60">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
-              <UserX className="w-5 h-5 text-rose-400" />
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="h-8 px-2.5 text-xs bg-muted/60 border border-border rounded-lg text-foreground font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {MESES.map((m, idx) => (
+                  <option key={m} value={idx}>
+                    {m}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div>
-              <p className="text-[11px] text-muted-foreground font-medium">Faltas Registradas</p>
-              <p className="text-xl font-bold text-rose-400">{stats.totalFaltas}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/60 bg-card/60">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-              <TrendingUp className="w-5 h-5 text-amber-400" />
-            </div>
-            <div>
-              <p className="text-[11px] text-muted-foreground font-medium">Taxa de Presença</p>
-              <p className="text-xl font-bold text-amber-400">{stats.taxaPresenca}%</p>
-            </div>
+          </CardHeader>
+          <CardContent className="p-4 space-y-3">
+            {faltasMesSelecionado.length === 0 ? (
+              <div className="text-center py-8 text-xs text-muted-foreground">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-80" />
+                Nenhum registro de falta acumulada para {MESES[selectedMonth]}.
+              </div>
+            ) : (
+              faltasMesSelecionado.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 rounded-xl border border-border/80 bg-muted/20 flex items-center justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-foreground truncate">{item.nome}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{item.cargo} • {item.regional}</p>
+                  </div>
+                  <Badge variant="destructive" className="text-xs font-bold shrink-0">
+                    {item.totalFaltas} falta(s)
+                  </Badge>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Visão de Faltas do Dia */}
-      <Card className="border-border/60">
-        <CardHeader className="pb-3 border-b border-border/40">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-rose-400" />
-              <CardTitle className="text-base">Faltas do Dia ({dataFormatada})</CardTitle>
-            </div>
-            <Badge variant="destructive" className="text-xs">
-              {faltasDoDia.length} ausência(s)
-            </Badge>
-          </div>
-          <CardDescription className="text-xs">
-            Colaboradores ausentes nas frentes de trabalho para a unidade selecionada.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          {faltasDoDia.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <CheckCircle2 className="w-10 h-10 text-emerald-400/60 mb-2" />
-              <p className="text-sm font-semibold text-foreground">100% de Presença!</p>
-              <p className="text-xs text-muted-foreground">Nenhuma falta registrada nesta data para {regionalLabel[unidadeFiltro]}.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border/40">
-              {faltasDoDia.map(({ colab, veiculo }) => (
-                <div key={colab.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/20 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-rose-500/40 bg-rose-500/10 flex items-center justify-center shrink-0">
-                      {colab.foto ? (
-                        <img src={colab.foto} alt={colab.nome} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-xs font-bold text-rose-400">{colab.nome.charAt(0)}</span>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-foreground">{colab.nome}</p>
-                      <p className="text-xs text-muted-foreground">{colab.cargo} • Matrícula: {colab.matricula}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
-                    <div className="text-right">
-                      <p className="text-xs font-semibold text-foreground">{veiculo.prefixo}</p>
-                      <p className="text-[11px] text-muted-foreground">{veiculo.regional === 'ribas' ? 'Ribas do Rio Pardo' : 'Água Clara'}</p>
-                    </div>
-                    <Badge variant="destructive" className="text-xs shrink-0">
-                      {colab.motivoFalta || 'Falta Não Justificada'}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Histórico Mensal de Faltas */}
-      <Card className="border-border/60">
-        <CardHeader className="pb-3 border-b border-border/40">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-primary" />
-              <div>
-                <CardTitle className="text-base">Histórico Mensal de Faltas</CardTitle>
-                <CardDescription className="text-xs">
-                  Selecione o mês para acompanhar os colaboradores com maiores índices de faltas.
-                </CardDescription>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 max-w-full">
-              {MESES.map((nomeMes, idx) => (
-                <button
-                  key={nomeMes}
-                  type="button"
-                  onClick={() => setSelectedMonth(idx)}
-                  className={cn(
-                    'px-2.5 py-1 rounded-lg text-xs font-semibold shrink-0 transition-all cursor-pointer',
-                    selectedMonth === idx
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/40'
-                  )}
-                >
-                  {nomeMes.slice(0, 3)}
-                </button>
-              ))}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {faltasMesSelecionado.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <CheckCircle2 className="w-10 h-10 text-muted-foreground/40 mb-2" />
-              <p className="text-sm font-semibold text-foreground">Sem registros de faltas recorrentes</p>
-              <p className="text-xs text-muted-foreground">Nenhuma falta contabilizada no mês de {MESES[selectedMonth]} para o filtro atual.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border/40">
-              {faltasMesSelecionado.map((item, index) => (
-                <div key={index} className="p-4 flex items-center justify-between hover:bg-muted/20 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-muted/60 border border-border flex items-center justify-center font-bold text-xs text-muted-foreground">
-                      #{index + 1}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-foreground">{item.nome}</p>
-                      <p className="text-xs text-muted-foreground">{item.cargo} • {item.regional}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground font-medium">Total no mês:</span>
-                    <Badge variant="destructive" className="font-bold text-xs">
-                      {item.totalFaltas} falta{item.totalFaltas > 1 ? 's' : ''}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 };

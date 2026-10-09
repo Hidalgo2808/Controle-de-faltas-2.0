@@ -1,6 +1,6 @@
 # 🗺️ Mapa de Arquitetura e Estrutura — Controle de Faltas
 
-> **Sincronizado automaticamente pelo Code In Engine** em `2026-10-09 17:45:03`
+> **Sincronizado automaticamente pelo Code In Engine** em `2026-10-09 18:31:38`
 > Este documento é a referência viva e em tempo real da arquitetura, componentes e entidades de negócio do projeto.
 
 ---
@@ -55,7 +55,7 @@
 ### 📦 Componentes da Aplicação (Seções e Features):
 - **`src/components/AttendanceModal.tsx`** (AttendanceModal): Modal/Dialog interativo (AttendanceModal)
   - *Importado por*: `src/components/VehicleCardGrid.tsx`
-  - *Sub-componentes*: `src/components/ui/button.tsx`, `src/components/ui/badge.tsx`, `src/types/index.ts`, `src/data/mockData.ts`, `src/lib/utils.ts`
+  - *Sub-componentes*: `src/components/ui/button.tsx`, `src/types/index.ts`, `src/data/mockData.ts`, `src/lib/utils.ts`
 
 - **`src/components/CollaboratorsManagement.tsx`** (CollaboratorsManagement): Componente React modular (CollaboratorsManagement)
   - *Importado por*: `src/App.tsx`

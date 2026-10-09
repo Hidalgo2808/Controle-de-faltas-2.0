@@ -225,24 +225,23 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
     }
   };
 
-  // Handler para Submeter Novo Colaborador
-  const handleSubmitNovoColaborador = (e: React.FormEvent) => {
+  const handleSalvarNovoColaborador = (e: React.FormEvent) => {
     e.preventDefault();
     if (!novoNome.trim()) {
-      setFormErro('O nome do colaborador é obrigatório.');
+      setFormErro('O nome completo do colaborador é obrigatório.');
       return;
     }
     if (!novoCargo.trim()) {
-      setFormErro('O cargo do colaborador é obrigatório.');
+      setFormErro('O cargo da função é obrigatório.');
       return;
     }
 
-    const novoColaborador: ColaboradorCompleto = {
+    const novoColab: ColaboradorCompleto = {
       id: `col-novo-${Date.now()}`,
       nome: novoNome.trim(),
       cargo: novoCargo.trim(),
       matricula: novaMatricula.trim() || `MAT-${Math.floor(1000 + Math.random() * 9000)}`,
-      foto: novaFoto || `https://images.unsplash.com/photo-${1534528741775 + Math.floor(Math.random() * 1000)}?w=150&auto=format&fit=crop&q=80`,
+      foto: novaFoto || `https://images.unsplash.com/photo-${1534528741775 + Math.floor(Math.random() * 50)}?w=150&auto=format&fit=crop&q=80`,
       telefone: novoTelefone.trim() || '(67) 99999-0000',
       status: novoStatus,
       equipeId: 'reserva',
@@ -253,10 +252,13 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
       regional: novaUnidade,
     };
 
-    setColaboradoresAdicionados((prev) => [novoColaborador, ...prev]);
-    onAdicionarColaborador?.(novoColaborador);
+    setColaboradoresAdicionados((prev) => [novoColab, ...prev]);
 
-    // Resetar formulário
+    if (onAdicionarColaborador) {
+      onAdicionarColaborador(novoColab);
+    }
+
+    // Limpa formulário
     setNovoNome('');
     setNovoCargo('');
     setNovaMatricula('');
@@ -266,53 +268,54 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
     setNovoStatus('presente');
     setFormErro(null);
     setModalNovoColaboradorAberto(false);
-    setSucessoMsg(`Colaborador ${novoColaborador.nome} cadastrado com sucesso!`);
-    setTimeout(() => setSucessoMsg(null), 4000);
   };
 
-  // Processar arquivo CSV / Excel
+  // Leitura de CSV / Excel simplificada
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setArquivoNome(file.name);
     setErroImportacao(null);
+    setSucessoMsg(null);
 
     const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
-        const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    reader.onload = (evt) => {
+      const text = evt.target?.result as string;
+      if (!text) {
+        setErroImportacao('Arquivo vazio ou ilegível.');
+        return;
+      }
 
-        if (lines.length < 2) {
-          setErroImportacao('O arquivo deve conter um cabeçalho e pelo menos 1 linha de registro.');
-          return;
+      const lines = text.split(/\r?\n/).filter((l) => l.trim() !== '');
+      if (lines.length <= 1) {
+        setErroImportacao('O arquivo precisa conter ao menos o cabeçalho e 1 linha de dados.');
+        return;
+      }
+
+      const rows: RegistroImportado[] = [];
+      // Ignora a primeira linha (cabeçalho)
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        const cols = line.split(/[,;\t]/).map((c) => c.trim().replace(/^"|"$/g, ''));
+        if (cols.length >= 2 && cols[0]) {
+          const rawUnidade = (cols[2] || '').toLowerCase();
+          const unidade: 'ribas' | 'agua_clara' = rawUnidade.includes('agua') || rawUnidade.includes('água') ? 'agua_clara' : 'ribas';
+
+          rows.push({
+            nome: cols[0],
+            cargo: cols[1] || 'Operador Florestal',
+            unidade,
+            matricula: cols[3] || `MAT-${Math.floor(1000 + Math.random() * 9000)}`,
+            telefone: cols[4] || '(67) 99999-0000',
+          });
         }
+      }
 
-        const registros: RegistroImportado[] = [];
-        // Pular cabeçalho
-        for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split(/[,;]/).map((c) => c.trim().replace(/^["']|["']$/g, ''));
-          if (cols.length >= 2 && cols[0]) {
-            const nome = cols[0];
-            const cargo = cols[1] || 'Operador Florestal';
-            const unidadeRaw = (cols[2] || 'ribas').toLowerCase();
-            const unidade: 'ribas' | 'agua_clara' = unidadeRaw.includes('agua') || unidadeRaw.includes('clara') ? 'agua_clara' : 'ribas';
-            const matricula = cols[3] || `MAT-${Math.floor(1000 + Math.random() * 9000)}`;
-            const telefone = cols[4] || '(67) 99999-0000';
-
-            registros.push({ nome, cargo, unidade, matricula, telefone });
-          }
-        }
-
-        if (registros.length === 0) {
-          setErroImportacao('Não foi possível identificar registros válidos no arquivo.');
-          return;
-        }
-
-        setRegistrosPrevia(registros);
-      } catch {
-        setErroImportacao('Erro ao ler o arquivo. Verifique o formato CSV/Excel.');
+      if (rows.length === 0) {
+        setErroImportacao('Não foi possível identificar registros válidos na planilha.');
+      } else {
+        setRegistrosPrevia(rows);
       }
     };
     reader.readAsText(file);
@@ -321,12 +324,12 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
   const handleConfirmarImportacao = () => {
     if (registrosPrevia.length === 0) return;
 
-    const novosColaboradores: ColaboradorCompleto[] = registrosPrevia.map((r, idx) => ({
+    const novos: ColaboradorCompleto[] = registrosPrevia.map((r, idx) => ({
       id: `imp-${Date.now()}-${idx}`,
       nome: r.nome,
       cargo: r.cargo,
       matricula: r.matricula || `MAT-${Math.floor(1000 + Math.random() * 9000)}`,
-      foto: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80`,
+      foto: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
       telefone: r.telefone || '(67) 99999-0000',
       status: 'presente',
       equipeId: 'reserva',
@@ -337,27 +340,32 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
       regional: r.unidade,
     }));
 
-    setColaboradoresAdicionados((prev) => [...novosColaboradores, ...prev]);
-    onImportarColaboradores?.(novosColaboradores);
+    setColaboradoresAdicionados((prev) => [...novos, ...prev]);
 
-    setSucessoMsg(`${novosColaboradores.length} colaboradores importados com sucesso!`);
-    setTimeout(() => setSucessoMsg(null), 4000);
+    if (onImportarColaboradores) {
+      onImportarColaboradores(novos);
+    }
 
-    setModalImportAberto(false);
-    setRegistrosPrevia([]);
-    setArquivoNome('');
+    setSucessoMsg(`${novos.length} colaboradores importados com sucesso!`);
+    setTimeout(() => {
+      setModalImportAberto(false);
+      setRegistrosPrevia([]);
+      setArquivoNome('');
+      setSucessoMsg(null);
+    }, 1500);
   };
 
-  const handleBaixarModelo = () => {
-    const csvContent = 'data:text/csv;charset=utf-8,' +
-      'Nome,Cargo,Unidade,Matricula,Telefone\n' +
-      'Carlos Oliveira,Operador de Trator,ribas,MAT-5021,(67) 99911-2233\n' +
-      'Juliana Silva,Técnica Florestal,agua_clara,MAT-5022,(67) 99922-3344\n' +
-      'Marcos Andrade,Motorista Florestal,ribas,MAT-5023,(67) 99933-4455';
+  const handleDownloadModeloCSV = () => {
+    const csvContent =
+      'Nome Completo,Cargo / Funcao,Unidade (Ribas ou Agua Clara),Matricula,Telefone\n' +
+      'Antonio Carlos da Silva,Operador de Motosserra,Ribas do Rio Pardo,MAT-7701,(67) 99911-2233\n' +
+      'Juliano Moreira Santos,Motorista Operacional,Agua Clara,MAT-7702,(67) 99944-5566\n' +
+      'Rodrigo Fernandes Lima,Ajudante Geral,Ribas do Rio Pardo,MAT-7703,(67) 99977-8899\n';
 
-    const encodedUri = encodeURI(csvContent);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     link.setAttribute('download', 'modelo_importacao_colaboradores.csv');
     document.body.appendChild(link);
     link.click();
@@ -366,341 +374,255 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
 
   return (
     <div className="space-y-6">
-      {/* Notificação de Sucesso */}
-      {sucessoMsg && (
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 animate-in fade-in duration-200">
-          <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-400" />
-          <span className="text-sm font-semibold">{sucessoMsg}</span>
-        </div>
-      )}
-
-      {/* Estatísticas Rápidas */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="bg-card/40 border-border/60">
+      {/* Cards de Resumo */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card className="bg-card/70 border-border/80 shadow-sm">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">Total Geral</p>
-              <p className="text-2xl font-black text-foreground mt-0.5">{stats.total}</p>
+              <p className="text-2xl font-bold text-foreground mt-0.5">{stats.total}</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+            <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20">
               <Users className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-card/40 border-border/60">
+        <Card className="bg-card/70 border-border/80 shadow-sm">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">Presentes</p>
-              <p className="text-2xl font-black text-emerald-400 mt-0.5">{stats.presentes}</p>
+              <p className="text-2xl font-bold text-emerald-400 mt-0.5">{stats.presentes}</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <UserCheck className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-card/40 border-border/60">
+        <Card className="bg-card/70 border-border/80 shadow-sm">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">Faltas</p>
-              <p className="text-2xl font-black text-rose-400 mt-0.5">{stats.faltas}</p>
+              <p className="text-2xl font-bold text-rose-400 mt-0.5">{stats.faltas}</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+            <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
               <UserX className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-card/40 border-border/60">
+        <Card className="bg-card/70 border-border/80 shadow-sm">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">Substitutos</p>
-              <p className="text-2xl font-black text-amber-400 mt-0.5">{stats.substitutos}</p>
+              <p className="text-2xl font-bold text-amber-400 mt-0.5">{stats.substitutos}</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <RefreshCw className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Barra de Filtros e Ações */}
-      <Card className="border-border/60 bg-card/60 backdrop-blur-md">
-        <CardContent className="p-4 sm:p-5">
-          <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
-            {/* Campo de Busca */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Buscar por nome, cargo, matrícula, veículo..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-10 bg-muted/40 border-border/60 rounded-xl text-sm"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            {/* Filtros e Botões */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              {/* Filtro Status */}
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as any)}
-                aria-label="Filtrar por status"
-                className="h-10 text-xs rounded-xl bg-muted/40 border border-border/60 text-foreground font-semibold px-3 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-              >
-                <option value="todos" className="bg-card text-foreground">Todos os Status</option>
-                <option value="presente" className="bg-card text-foreground">Presentes</option>
-                <option value="falta" className="bg-card text-foreground">Faltas</option>
-                <option value="substituto" className="bg-card text-foreground">Substitutos</option>
-              </select>
-
-              {/* Filtro Regional */}
-              <select
-                value={filterRegional}
-                onChange={(e) => setFilterRegional(e.target.value as any)}
-                aria-label="Filtrar por unidade regional"
-                className="h-10 text-xs rounded-xl bg-muted/40 border border-border/60 text-foreground font-semibold px-3 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-              >
-                <option value="todas" className="bg-card text-foreground">Todas as Unidades</option>
-                <option value="ribas" className="bg-card text-foreground">Ribas do Rio Pardo</option>
-                <option value="agua_clara" className="bg-card text-foreground">Água Clara</option>
-              </select>
-
-              {/* Botão Adicionar Manualmente */}
-              <Button
-                type="button"
-                onClick={() => setModalNovoColaboradorAberto(true)}
-                className="h-10 rounded-xl gap-2 font-semibold shadow-md shadow-primary/20 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                Adicionar Colaborador
-              </Button>
-
-              {/* Botão Importar */}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setModalImportAberto(true)}
-                className="h-10 rounded-xl gap-2 font-semibold border-border/70 hover:bg-muted/60 cursor-pointer"
-              >
-                <UploadCloud className="w-4 h-4 text-primary" />
-                Importar Lista
-              </Button>
-            </div>
+      {/* Barra de Ações e Filtros */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="text"
+              placeholder="Buscar por nome, cargo, matrícula ou veículo..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 h-10 w-full"
+            />
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="flex items-center gap-2">
+            <select
+              value={filterRegional}
+              onChange={(e) => setFilterRegional(e.target.value as Regional | 'todas')}
+              className="h-10 px-3 text-xs bg-card border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
+            >
+              <option value="todas">Todas as Unidades</option>
+              <option value="ribas">Ribas do Rio Pardo</option>
+              <option value="agua_clara">Água Clara</option>
+            </select>
+
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as StatusPresenca | 'todos')}
+              className="h-10 px-3 text-xs bg-card border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
+            >
+              <option value="todos">Todos os Status</option>
+              <option value="presente">Presentes</option>
+              <option value="falta">Faltas</option>
+              <option value="substituto">Substitutos</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            onClick={() => setModalNovoColaboradorAberto(true)}
+            className="gap-2 h-10 px-4 bg-primary text-primary-foreground font-semibold shadow-md hover:bg-primary/90"
+          >
+            <Plus className="w-4 h-4" />
+            Adicionar Colaborador
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => setModalImportAberto(true)}
+            className="gap-2 h-10 px-3.5 border-border hover:bg-accent text-xs font-semibold"
+          >
+            <UploadCloud className="w-4 h-4 text-primary" />
+            Importar Excel
+          </Button>
+        </div>
+      </div>
 
       {/* Lista de Colaboradores */}
-      <div className="space-y-3">
-        {colaboradoresFiltrados.length === 0 ? (
-          <Card className="border-border/60 bg-card/40">
-            <CardContent className="p-12 text-center space-y-3">
-              <div className="w-14 h-14 rounded-2xl bg-muted/50 border border-border/60 flex items-center justify-center mx-auto text-muted-foreground">
-                <Users className="w-7 h-7" />
-              </div>
-              <h3 className="text-base font-bold text-foreground">Nenhum colaborador encontrado</h3>
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                Tente ajustar os filtros de busca ou utilize o botão acima para adicionar ou importar colaboradores.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          colaboradoresFiltrados.map((colab) => {
-            const isExpanded = expandedId === colab.id;
-            const statusInfo = statusConfig[colab.status] || statusConfig.presente;
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {colaboradoresFiltrados.map((c) => {
+          const isExpanded = expandedId === c.id;
+          const status = statusConfig[c.status] || statusConfig.presente;
 
-            return (
-              <Card
-                key={colab.id}
-                className={cn(
-                  'border-border/60 bg-card/70 hover:bg-card/90 transition-all overflow-hidden',
-                  isExpanded && 'ring-1 ring-primary/40'
-                )}
-              >
-                <CardContent className="p-4 sm:p-5">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    {/* Foto e Informações Principais */}
-                    <div className="flex items-center gap-3.5">
-                      <div className="relative">
-                        {colab.foto ? (
-                          <img
-                            src={colab.foto}
-                            alt={colab.nome}
-                            className="w-12 h-12 rounded-2xl object-cover border border-border/80 shadow-md ring-2 ring-border/40"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-2xl bg-muted/70 border border-border flex items-center justify-center text-muted-foreground font-black text-base">
-                            {colab.nome.charAt(0)}
-                          </div>
-                        )}
-                        <span
-                          className={cn(
-                            'absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-card',
-                            colab.status === 'presente' && 'bg-emerald-400',
-                            colab.status === 'falta' && 'bg-rose-400',
-                            colab.status === 'substituto' && 'bg-amber-400'
-                          )}
+          return (
+            <Card
+              key={c.id}
+              className={cn(
+                'border transition-all duration-200 hover:border-primary/40 bg-card/60 overflow-hidden',
+                c.status === 'falta' && 'border-rose-500/30 bg-rose-500/[0.02]',
+                c.status === 'substituto' && 'border-amber-500/30 bg-amber-500/[0.02]'
+              )}
+            >
+              <div className="p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="relative shrink-0">
+                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-border/80 bg-muted">
+                      {c.foto ? (
+                        <img
+                          src={c.foto}
+                          alt={c.nome}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+                          }}
                         />
-                      </div>
-
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-sm sm:text-base font-bold text-foreground">{colab.nome}</h4>
-                          <span className="text-[11px] font-mono text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-md border border-border/40">
-                            {colab.matricula}
-                          </span>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center font-bold text-foreground">
+                          {c.nome.charAt(0)}
                         </div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-2">
-                          <span>{colab.cargo}</span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-emerald-400" />
-                            {regionalLabel[colab.regional] || 'Ribas do Rio Pardo'}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Status e Ações */}
-                    <div className="flex items-center gap-3 justify-between sm:justify-end">
-                      <div className="flex items-center gap-2">
-                        <span className={cn('px-2.5 py-1 rounded-full text-xs font-bold border', statusInfo.className)}>
-                          {statusInfo.label}
-                        </span>
-                        {colab.veiculoPrefixo && (
-                          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-muted/50 border border-border/50 text-foreground">
-                            {colab.veiculoPrefixo}
-                          </span>
-                        )}
-                      </div>
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setExpandedId(isExpanded ? null : colab.id)}
-                        className="h-8 w-8 p-0 rounded-lg"
-                      >
-                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </Button>
+                      )}
                     </div>
                   </div>
 
-                  {/* Detalhes Expandidos */}
-                  {isExpanded && (
-                    <div className="mt-4 pt-4 border-t border-border/50 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs animate-in fade-in duration-150">
-                      <div className="p-3 rounded-xl bg-muted/30 border border-border/40 space-y-1">
-                        <p className="text-muted-foreground font-semibold flex items-center gap-1.5">
-                          <Phone className="w-3.5 h-3.5 text-primary" />
-                          Contato Direto
-                        </p>
-                        <p className="text-foreground font-medium">{colab.telefone || 'Não informado'}</p>
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-muted/30 border border-border/40 space-y-1">
-                        <p className="text-muted-foreground font-semibold flex items-center gap-1.5">
-                          <Building2 className="w-3.5 h-3.5 text-emerald-400" />
-                          Lotação Operacional
-                        </p>
-                        <p className="text-foreground font-medium">
-                          {colab.veiculoPrefixo} {colab.veiculoPlaca !== '-' ? `(${colab.veiculoPlaca})` : ''}
-                        </p>
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-muted/30 border border-border/40 space-y-1">
-                        <p className="text-muted-foreground font-semibold flex items-center gap-1.5">
-                          <IdCard className="w-3.5 h-3.5 text-amber-400" />
-                          Ocorrência de Hoje
-                        </p>
-                        <p className="text-foreground font-medium">
-                          {colab.motivoFalta ? `Falta: ${colab.motivoFalta}` : colab.substitutoNome ? `Substituindo ${colab.substitutoNome}` : 'Presença normal em rota'}
-                        </p>
-                      </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <h3 className="font-bold text-sm text-foreground truncate">{c.nome}</h3>
+                      <Badge className={cn('text-[10px] px-2 py-0.5 shrink-0', status.className)}>
+                        {status.label}
+                      </Badge>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
+                    <p className="text-xs text-muted-foreground truncate">{c.cargo}</p>
+                    <p className="text-[11px] text-muted-foreground/80 flex items-center gap-1 mt-0.5">
+                      <IdCard className="w-3 h-3 text-muted-foreground" />
+                      {c.matricula || 'Sem matrícula'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-border/50">
+                  <div className="flex items-center gap-1.5 text-muted-foreground truncate">
+                    <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="truncate">{regionalLabel[c.regional] || 'Regional'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-muted-foreground truncate">
+                    <Phone className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="truncate">{c.telefone || 'Sem contato'}</span>
+                  </div>
+                </div>
+
+                {/* Detalhes extras se houver falta ou substituto */}
+                {(c.motivoFalta || c.substitutoNome) && (
+                  <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 text-xs space-y-1">
+                    {c.motivoFalta && (
+                      <p className="text-rose-400 font-medium">
+                        Motivo: <span className="text-foreground">{c.motivoFalta}</span>
+                      </p>
+                    )}
+                    {c.substitutoNome && (
+                      <p className="text-amber-400 font-medium">
+                        Substituído por: <span className="text-foreground">{c.substitutoNome}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
-      {/* Modal de Cadastro Manual de Colaborador */}
+      {colaboradoresFiltrados.length === 0 && (
+        <div className="text-center py-12 border border-dashed border-border rounded-2xl bg-card/30">
+          <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-40" />
+          <p className="text-base font-semibold text-foreground">Nenhum colaborador encontrado</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Tente ajustar os termos de pesquisa ou filtros selecionados.
+          </p>
+        </div>
+      )}
+
+      {/* Modal: Adicionar Colaborador Manualmente com Foto */}
       {modalNovoColaboradorAberto && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150"
           onClick={() => setModalNovoColaboradorAberto(false)}
         >
           <div
-            className="relative w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+            className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                  <Plus className="w-5 h-5" />
+                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
+                  <Plus className="w-4 h-4" />
                 </div>
-                <div>
-                  <h2 className="text-base font-bold text-foreground">Adicionar Colaborador</h2>
-                  <p className="text-xs text-muted-foreground">Cadastre novos integrantes na base de operação</p>
-                </div>
+                <h2 className="font-bold text-base text-foreground">Adicionar Novo Colaborador</h2>
               </div>
               <button
-                type="button"
                 onClick={() => setModalNovoColaboradorAberto(false)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmitNovoColaborador} className="p-6 space-y-4 overflow-y-auto">
+            <form onSubmit={handleSalvarNovoColaborador} className="p-6 space-y-4">
               {formErro && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-semibold">
+                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{formErro}</span>
+                  {formErro}
                 </div>
               )}
 
-              {/* Área de Upload de Foto */}
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
-                  Foto do Colaborador
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="relative w-20 h-20 rounded-2xl border-2 border-dashed border-border bg-muted/30 overflow-hidden flex items-center justify-center shrink-0 group">
-                    {novaFoto ? (
-                      <>
-                        <img src={novaFoto} alt="Prévia" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={handleRemoverFoto}
-                          className="absolute inset-0 bg-background/70 text-rose-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-muted-foreground">
-                        <Camera className="w-6 h-6 text-muted-foreground/80" />
-                        <span className="text-[10px] mt-1">Sem foto</span>
-                      </div>
-                    )}
-                  </div>
+              {/* Upload de Foto */}
+              <div className="flex items-center gap-4 p-3 rounded-xl bg-muted/30 border border-border">
+                <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-primary/40 bg-muted shrink-0 flex items-center justify-center group">
+                  {novaFoto ? (
+                    <img src={novaFoto} alt="Previa" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera className="w-6 h-6 text-muted-foreground" />
+                  )}
+                </div>
 
-                  <div className="flex-1 space-y-1.5">
+                <div className="flex-1 min-w-0 space-y-1">
+                  <p className="text-xs font-semibold text-foreground">Foto do Colaborador</p>
+                  <p className="text-[11px] text-muted-foreground">Arquivos PNG, JPG ou WEBP até 5MB.</p>
+                  <div className="flex items-center gap-2 pt-1">
                     <input
                       ref={fotoInputRef}
                       type="file"
@@ -709,30 +631,35 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
                       className="hidden"
                       id="foto-upload-input"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fotoInputRef.current?.click()}
-                      className="h-9 rounded-xl gap-2 text-xs font-semibold cursor-pointer"
+                    <label
+                      htmlFor="foto-upload-input"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium cursor-pointer hover:bg-secondary/80 transition-colors"
                     >
-                      <Camera className="w-3.5 h-3.5 text-primary" />
-                      {novaFoto ? 'Substituir Foto' : 'Subir Foto do Colaborador'}
-                    </Button>
-                    <p className="text-[11px] text-muted-foreground">
-                      Formatos aceitos: PNG, JPG ou WEBP (máx. 5MB).
-                    </p>
+                      <Camera className="w-3.5 h-3.5" />
+                      {novaFoto ? 'Alterar Foto' : 'Selecionar Foto'}
+                    </label>
+                    {novaFoto && (
+                      <button
+                        type="button"
+                        onClick={handleRemoverFoto}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-rose-400 hover:bg-rose-500/10 text-xs font-medium transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Remover
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Nome Completo */}
+              {/* Nome */}
               <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
                   Nome Completo *
                 </label>
                 <Input
-                  placeholder="Ex: Carlos Eduardo Silveira"
+                  type="text"
+                  placeholder="Ex: Carlos Eduardo de Oliveira"
                   value={novoNome}
                   onChange={(e) => setNovoNome(e.target.value)}
                   required
@@ -740,115 +667,87 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
               </div>
 
               {/* Cargo e Matrícula */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
                     Cargo / Função *
                   </label>
-                  <div className="relative">
-                    <Briefcase className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                    <Input
-                      placeholder="Ex: Operador Florestal"
-                      value={novoCargo}
-                      onChange={(e) => setNovoCargo(e.target.value)}
-                      className="pl-9"
-                      required
-                    />
-                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Ex: Operador Florestal"
+                    value={novoCargo}
+                    onChange={(e) => setNovoCargo(e.target.value)}
+                    required
+                  />
                 </div>
-
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
-                    Matrícula (Opcional)
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                    Matrícula
                   </label>
-                  <div className="relative">
-                    <IdCard className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                    <Input
-                      placeholder="Ex: MAT-4812"
-                      value={novaMatricula}
-                      onChange={(e) => setNovaMatricula(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Ex: MAT-4501"
+                    value={novaMatricula}
+                    onChange={(e) => setNovaMatricula(e.target.value)}
+                  />
                 </div>
               </div>
 
-              {/* Telefone e Status */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Telefone e Unidade */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
-                    Telefone de Contato
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                    Telefone / WhatsApp
                   </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                    <Input
-                      placeholder="Ex: (67) 99999-1234"
-                      value={novoTelefone}
-                      onChange={(e) => setNovoTelefone(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Ex: (67) 99812-3344"
+                    value={novoTelefone}
+                    onChange={(e) => setNovoTelefone(e.target.value)}
+                  />
                 </div>
-
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
-                    Status Inicial
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                    Unidade Operacional
                   </label>
                   <select
-                    value={novoStatus}
-                    onChange={(e) => setNovoStatus(e.target.value as StatusPresenca)}
-                    className="w-full h-10 rounded-xl bg-card/50 border border-input text-sm px-3 text-foreground font-semibold focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                    value={novaUnidade}
+                    onChange={(e) => setNovaUnidade(e.target.value as 'ribas' | 'agua_clara')}
+                    className="w-full h-10 px-3 text-xs bg-muted/40 border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
                   >
-                    <option value="presente" className="bg-card text-foreground">Presente</option>
-                    <option value="falta" className="bg-card text-foreground">Falta</option>
-                    <option value="substituto" className="bg-card text-foreground">Substituto</option>
+                    <option value="ribas">Ribas do Rio Pardo</option>
+                    <option value="agua_clara">Água Clara</option>
                   </select>
                 </div>
               </div>
 
-              {/* Unidade Regional */}
+              {/* Status Inicial */}
               <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
-                  Unidade Regional
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Status de Presença
                 </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setNovaUnidade('ribas')}
-                    className={cn(
-                      'flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer',
-                      novaUnidade === 'ribas'
-                        ? 'bg-sky-500/15 border-sky-500 text-sky-400'
-                        : 'border-border text-muted-foreground hover:bg-muted'
-                    )}
-                  >
-                    <MapPin className="w-3.5 h-3.5" />
-                    Ribas do Rio Pardo
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setNovaUnidade('agua_clara')}
-                    className={cn(
-                      'flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer',
-                      novaUnidade === 'agua_clara'
-                        ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400'
-                        : 'border-border text-muted-foreground hover:bg-muted'
-                    )}
-                  >
-                    <MapPin className="w-3.5 h-3.5" />
-                    Água Clara
-                  </button>
-                </div>
+                <select
+                  value={novoStatus}
+                  onChange={(e) => setNovoStatus(e.target.value as StatusPresenca)}
+                  className="w-full h-10 px-3 text-xs bg-muted/40 border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
+                >
+                  <option value="presente">Presente</option>
+                  <option value="falta">Falta</option>
+                  <option value="substituto">Substituto (Reserva)</option>
+                </select>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-border mt-6">
-                <Button type="button" variant="outline" onClick={() => setModalNovoColaboradorAberto(false)}>
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setModalNovoColaboradorAberto(false)}
+                >
                   Cancelar
                 </Button>
-                <Button type="submit" className="gap-2 font-semibold">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Salvar Colaborador
+                <Button type="submit" size="sm" className="font-semibold">
+                  Cadastrar Colaborador
                 </Button>
               </div>
             </form>
@@ -856,63 +755,67 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
         </div>
       )}
 
-      {/* Modal de Importação Excel / CSV */}
+      {/* Modal: Importar Planilha Excel / CSV */}
       {modalImportAberto && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150"
           onClick={() => setModalImportAberto(false)}
         >
           <div
-            className="relative w-full max-w-xl bg-card border border-border rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+            className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                  <FileSpreadsheet className="w-5 h-5" />
+                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
+                  <FileSpreadsheet className="w-4 h-4" />
                 </div>
-                <div>
-                  <h2 className="text-base font-bold text-foreground">Importar Colaboradores</h2>
-                  <p className="text-xs text-muted-foreground">Envie planilha CSV ou Excel com a listagem de funcionários</p>
-                </div>
+                <h2 className="font-bold text-base text-foreground">Importar Colaboradores</h2>
               </div>
               <button
-                type="button"
                 onClick={() => setModalImportAberto(false)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4 overflow-y-auto">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/50 text-xs">
-                <div>
-                  <p className="font-bold text-foreground">Estrutura recomendada das colunas:</p>
-                  <p className="text-muted-foreground mt-0.5">Nome, Cargo, Unidade, Matricula, Telefone</p>
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Envie um arquivo <strong>CSV ou Excel</strong> contendo a lista de colaboradores para inclusão automática.
+              </p>
+
+              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border">
+                <div className="text-xs">
+                  <p className="font-semibold text-foreground">Modelo de Planilha Padrão</p>
+                  <p className="text-muted-foreground text-[11px]">Baixe o layout padrão para preencher seus dados.</p>
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={handleBaixarModelo}
-                  className="h-8 text-xs gap-1.5 shrink-0"
+                  onClick={handleDownloadModeloCSV}
+                  className="gap-1.5 text-xs h-8"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  Baixar Modelo CSV
+                  <Download className="w-3.5 h-3.5 text-primary" />
+                  Baixar Modelo
                 </Button>
               </div>
 
-              {/* Upload Dropzone */}
+              {/* Área de Dropzone */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-border/80 hover:border-primary/50 bg-muted/20 hover:bg-muted/30 transition-all rounded-2xl p-6 text-center cursor-pointer space-y-2"
+                className="border-2 border-dashed border-border hover:border-primary/50 rounded-2xl p-6 text-center cursor-pointer transition-colors bg-muted/10 hover:bg-muted/30"
               >
-                <UploadCloud className="w-8 h-8 text-primary mx-auto" />
-                <p className="text-sm font-bold text-foreground">
-                  {arquivoNome ? arquivoNome : 'Clique para selecionar arquivo .CSV ou .TXT'}
-                </p>
-                <p className="text-xs text-muted-foreground">Suporta arquivos separados por vírgula ou ponto e vírgula</p>
+                <UploadCloud className="w-8 h-8 text-primary mx-auto mb-2" />
+                <p className="text-sm font-semibold text-foreground">Clique para selecionar o arquivo</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Suporta arquivos .CSV ou .TXT</p>
+                {arquivoNome && (
+                  <p className="text-xs font-bold text-primary mt-2 flex items-center justify-center gap-1">
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                    {arquivoNome}
+                  </p>
+                )}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -923,30 +826,33 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
               </div>
 
               {erroImportacao && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-semibold">
+                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{erroImportacao}</span>
+                  {erroImportacao}
                 </div>
               )}
 
-              {/* Pré-visualização dos Registros */}
-              {registrosPrevia.length > 0 && (
+              {sucessoMsg && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  {sucessoMsg}
+                </div>
+              )}
+
+              {registrosPrevia.length > 0 && !sucessoMsg && (
                 <div className="space-y-2">
-                  <p className="text-xs font-bold text-foreground flex items-center justify-between">
-                    <span>Prévia dos registros identificados ({registrosPrevia.length})</span>
-                    <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30">
-                      Pronto para importar
-                    </Badge>
+                  <p className="text-xs font-bold text-foreground">
+                    Prévia dos Registros Encontrados ({registrosPrevia.length}):
                   </p>
-                  <div className="max-h-40 overflow-y-auto rounded-xl border border-border/60 bg-muted/20 divide-y divide-border/40 text-xs">
-                    {registrosPrevia.map((reg, idx) => (
-                      <div key={idx} className="p-2.5 flex items-center justify-between">
+                  <div className="max-h-36 overflow-y-auto border border-border rounded-xl divide-y divide-border/60">
+                    {registrosPrevia.map((item, idx) => (
+                      <div key={idx} className="p-2 text-xs flex items-center justify-between">
                         <div>
-                          <p className="font-semibold text-foreground">{reg.nome}</p>
-                          <p className="text-[11px] text-muted-foreground">{reg.cargo} • {reg.matricula}</p>
+                          <p className="font-semibold text-foreground">{item.nome}</p>
+                          <p className="text-[11px] text-muted-foreground">{item.cargo}</p>
                         </div>
                         <Badge variant="outline" className="text-[10px]">
-                          {reg.unidade === 'ribas' ? 'Ribas' : 'Água Clara'}
+                          {item.unidade === 'ribas' ? 'Ribas' : 'Água Clara'}
                         </Badge>
                       </div>
                     ))}
@@ -954,18 +860,23 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-border mt-6">
-                <Button type="button" variant="outline" onClick={() => setModalImportAberto(false)}>
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setModalImportAberto(false)}
+                >
                   Cancelar
                 </Button>
                 <Button
                   type="button"
-                  onClick={handleConfirmarImportacao}
+                  size="sm"
                   disabled={registrosPrevia.length === 0}
-                  className="gap-2 font-semibold"
+                  onClick={handleConfirmarImportacao}
+                  className="font-semibold"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Confirmar Importação ({registrosPrevia.length})
+                  Importar {registrosPrevia.length > 0 ? `(${registrosPrevia.length})` : ''}
                 </Button>
               </div>
             </div>

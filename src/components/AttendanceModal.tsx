@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, UserCheck, UserX, RefreshCw, AlertCircle, ChevronDown, Search } from 'lucide-react';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Colaborador, StatusPresenca, MotivoFalta } from '../types';
 import { COLABORADORES_RESERVA } from '../data/mockData';
 import { cn } from '@/lib/utils';
@@ -181,43 +180,39 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                         {substitutoSelecionado.foto ? (
                           <img src={substitutoSelecionado.foto} alt={substitutoSelecionado.nome} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-sm font-bold text-amber-400">
-                            {substitutoSelecionado.nome.charAt(0)}
-                          </span>
+                          <span className="text-xs font-bold text-amber-300">{substitutoSelecionado.nome?.charAt(0)}</span>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-foreground truncate">{substitutoSelecionado.nome}</p>
+                        <p className="text-xs font-bold text-amber-300 truncate">{substitutoSelecionado.nome}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{substitutoSelecionado.cargo}</p>
                       </div>
                     </div>
                   )}
 
-                  <div className="max-h-40 overflow-y-auto space-y-1 pr-1">
-                    {reservaFiltrada.map((r) => (
+                  <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                    {reservaFiltrada.map((item) => (
                       <button
-                        key={r.id}
+                        key={item.id}
                         type="button"
-                        onClick={() => setSubstitutoId(r.id)}
+                        onClick={() => setSubstitutoId(item.id)}
                         className={cn(
-                          'w-full flex items-center gap-3 p-2 rounded-xl text-left transition-all text-xs',
-                          substitutoId === r.id
-                            ? 'bg-primary text-primary-foreground font-semibold'
-                            : 'hover:bg-muted text-foreground'
+                          'w-full flex items-center gap-2.5 p-2 rounded-lg text-left text-xs transition-colors border',
+                          substitutoId === item.id
+                            ? 'bg-amber-500/20 border-amber-500/50 text-foreground font-semibold'
+                            : 'border-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground'
                         )}
                       >
-                        <div className="w-7 h-7 rounded-full overflow-hidden bg-muted shrink-0">
-                          {r.foto ? (
-                            <img src={r.foto} alt={r.nome} className="w-full h-full object-cover" />
+                        <div className="w-7 h-7 rounded-full overflow-hidden border border-border shrink-0 bg-muted">
+                          {item.foto ? (
+                            <img src={item.foto} alt={item.nome} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold">
-                              {r.nome.charAt(0)}
-                            </div>
+                            <span className="w-full h-full flex items-center justify-center text-[10px] font-bold">{item.nome?.charAt(0)}</span>
                           )}
                         </div>
-                        <div className="truncate flex-1">
-                          <p className="truncate leading-none mb-0.5">{r.nome}</p>
-                          <p className="text-[10px] opacity-75 truncate">{r.cargo}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate font-medium">{item.nome}</p>
+                          <p className="text-[10px] opacity-75 truncate">{item.cargo}</p>
                         </div>
                       </button>
                     ))}
@@ -230,11 +225,11 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-muted/20">
-          <Button variant="ghost" size="sm" onClick={onClose} className="text-xs">
+          <Button variant="outline" size="sm" onClick={onClose}>
             Cancelar
           </Button>
-          <Button size="sm" onClick={handleSave} className="text-xs">
-            Confirmar Alteração
+          <Button size="sm" onClick={handleSave}>
+            Salvar Alteração
           </Button>
         </div>
       </div>
