@@ -3,13 +3,13 @@
   "framework": "React 18 + Vite + Tailwind CSS",
   "architecturalDecisions": [],
   "activeWorkingSet": [
+    "src/components/CollaboratorsManagement.tsx",
+    "src/App.tsx",
     "package.json",
     "vercel.json",
     "src/components/TeamsManagement.tsx",
-    "src/App.tsx",
     "src/data/mockData.ts",
     "src/components/AttendanceModal.tsx",
-    "src/components/CollaboratorsManagement.tsx",
     "src/components/ExportReports.tsx",
     "src/index.css",
     "src/components/Navbar.tsx",
@@ -20,6 +20,18 @@
     "src/components/VehicleTopView.tsx"
   ],
   "commitLedger": [
+    {
+      "id": "ZkupwYWBS2NLewf-ZBOj8",
+      "timestamp": 1791817764547,
+      "prompt": "na aba de colaboradores, adicionar a opção de subir o arquivo em ecxcel com nome, função, unidade.",
+      "summary": "Aqui está a implementação completa e integrada. Foi adicionada à aba **Colaboradores** a opção de **Subir Planilha Excel / CSV** com leitura dos campos **Nome, Função (Cargo) e Unidade (Ribas do Rio P",
+      "filesCreated": [],
+      "filesModified": [
+        "src/components/CollaboratorsManagement.tsx",
+        "src/App.tsx"
+      ],
+      "filesDeleted": []
+    },
     {
       "id": "Ew9tLW7ZzvLbk-7vBOIs9",
       "timestamp": 1791816071642,
@@ -375,23 +387,8 @@
         "src/App.tsx"
       ],
       "filesDeleted": []
-    },
-    {
-      "id": "vp736q0V4fWzS7xKHUnSO",
-      "timestamp": 1791457990650,
-      "prompt": "O preview do projeto gerou uma EXCEÇÃO DE RUNTIME / TELA BRANCA no navegador:\n\nERRO CAPTURADO:\n```\nUncaught TypeError: Cannot read properties of undefined (reading 'forEach')\nOrigem: http://127.0.0.1:8080/node_modules/.vite/deps/chunk-PJEEZAML.js?v=acb784bb:19413\n```\n\nINSTRUÇÕES OBRIGATÓRIAS PARA A IA:\n1. Inspecione o arquivo onde o erro ocorre e rastreie os componentes envolvidos.\n2. Se houver propriedades nulas ou variáveis indefinidas, adicione verificações seguras e optional chaining (?.).\n3. Aplique as correções diretamente nos arquivos e garanta que o projeto renderize no preview.",
-      "summary": "```tsx:src/components/ExportReports.tsx import React, { useState, useMemo } from 'react'; import { Download, Calendar, Users, Car, TrendingUp, CheckCircle2, Printer, UserCheck, UserX, RefreshCw, FileS",
-      "filesCreated": [],
-      "filesModified": [
-        "src/components/ExportReports.tsx",
-        "src/components/AttendanceModal.tsx",
-        "src/data/mockData.ts",
-        "src/components/CollaboratorsManagement.tsx",
-        "src/App.tsx"
-      ],
-      "filesDeleted": []
     }
   ],
   "createdAt": 1791204952471,
-  "updatedAt": 1791816071644
+  "updatedAt": 1791817764548
 }
