@@ -180,39 +180,47 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                         {substitutoSelecionado.foto ? (
                           <img src={substitutoSelecionado.foto} alt={substitutoSelecionado.nome} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-xs font-bold text-amber-300">{substitutoSelecionado.nome?.charAt(0)}</span>
+                          <span className="text-xs font-bold text-foreground">{substitutoSelecionado.nome.charAt(0)}</span>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-amber-300 truncate">{substitutoSelecionado.nome}</p>
+                        <p className="text-xs font-bold text-foreground truncate">{substitutoSelecionado.nome}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{substitutoSelecionado.cargo}</p>
                       </div>
+                      <button
+                        onClick={() => setSubstitutoId('')}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Trocar
+                      </button>
                     </div>
                   )}
 
-                  <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
-                    {reservaFiltrada.map((item) => (
+                  <div className="max-h-40 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                    {reservaFiltrada.map((c) => (
                       <button
-                        key={item.id}
+                        key={c.id}
                         type="button"
-                        onClick={() => setSubstitutoId(item.id)}
+                        onClick={() => setSubstitutoId(c.id)}
                         className={cn(
-                          'w-full flex items-center gap-2.5 p-2 rounded-lg text-left text-xs transition-colors border',
-                          substitutoId === item.id
-                            ? 'bg-amber-500/20 border-amber-500/50 text-foreground font-semibold'
-                            : 'border-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground'
+                          'w-full flex items-center gap-2.5 p-2 rounded-xl text-left text-xs transition-colors',
+                          substitutoId === c.id
+                            ? 'bg-amber-500/20 text-foreground font-semibold border border-amber-500/40'
+                            : 'hover:bg-muted/60 text-muted-foreground hover:text-foreground'
                         )}
                       >
-                        <div className="w-7 h-7 rounded-full overflow-hidden border border-border shrink-0 bg-muted">
-                          {item.foto ? (
-                            <img src={item.foto} alt={item.nome} className="w-full h-full object-cover" />
+                        <div className="w-7 h-7 rounded-full overflow-hidden border border-border bg-muted shrink-0">
+                          {c.foto ? (
+                            <img src={c.foto} alt={c.nome} className="w-full h-full object-cover" />
                           ) : (
-                            <span className="w-full h-full flex items-center justify-center text-[10px] font-bold">{item.nome?.charAt(0)}</span>
+                            <div className="w-full h-full flex items-center justify-center text-[10px]">
+                              {c.nome.charAt(0)}
+                            </div>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="truncate font-medium">{item.nome}</p>
-                          <p className="text-[10px] opacity-75 truncate">{item.cargo}</p>
+                        <div className="truncate flex-1">
+                          <p className="font-medium text-foreground truncate">{c.nome}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{c.cargo}</p>
                         </div>
                       </button>
                     ))}
@@ -224,12 +232,12 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-muted/20">
+        <div className="flex items-center justify-end gap-2 px-6 py-4 bg-muted/20 border-t border-border">
           <Button variant="outline" size="sm" onClick={onClose}>
             Cancelar
           </Button>
           <Button size="sm" onClick={handleSave}>
-            Salvar Alteração
+            Salvar Registro
           </Button>
         </div>
       </div>

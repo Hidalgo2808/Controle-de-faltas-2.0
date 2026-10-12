@@ -3,6 +3,8 @@
   "framework": "React 18 + Vite + Tailwind CSS",
   "architecturalDecisions": [],
   "activeWorkingSet": [
+    "vercel.json",
+    "package.json",
     "src/data/mockData.ts",
     "src/components/AttendanceModal.tsx",
     "src/components/CollaboratorsManagement.tsx",
@@ -18,6 +20,23 @@
     "src/components/VehicleTopView.tsx"
   ],
   "commitLedger": [
+    {
+      "id": "RRbqN3EgMxUeYEtW1C19j",
+      "timestamp": 1791815781258,
+      "prompt": "Error: Command \"npm run build\" exited with 126\n\ncorrigir esse erro na vercel",
+      "summary": "O erro **Exit code 126** na Vercel ocorre em ambientes Linux quando o sistema tenta executar o comando de build (como `vite build` ou `tsc`) através de um wrapper de binário em `node_modules/.bin/` e",
+      "filesCreated": [
+        "vercel.json"
+      ],
+      "filesModified": [
+        "package.json",
+        "src/data/mockData.ts",
+        "src/components/AttendanceModal.tsx",
+        "src/components/CollaboratorsManagement.tsx",
+        "src/components/ExportReports.tsx"
+      ],
+      "filesDeleted": []
+    },
     {
       "id": "MGt85RuYLRJ5SOnK6hYwE",
       "timestamp": 1791570698540,
@@ -370,21 +389,8 @@
         "src/components/ComponentShowcase.tsx"
       ],
       "filesDeleted": []
-    },
-    {
-      "id": "NqN2oAK7BBSxmmm__ygcC",
-      "timestamp": 1791457338217,
-      "prompt": "na aba relatórios, no botão de salvar em pdf quero que saia no relatorio as falta do dia e de como ficou cada carro com quantidade de equipes",
-      "summary": "```tsx:src/components/ExportReports.tsx import React, { useState, useMemo } from 'react'; import { Download, Calendar, Users, Car, TrendingUp, CheckCircle2, Printer, UserCheck, UserX, RefreshCw, FileS",
-      "filesCreated": [],
-      "filesModified": [
-        "src/components/ExportReports.tsx",
-        "src/App.tsx",
-        "src/components/ComponentShowcase.tsx"
-      ],
-      "filesDeleted": []
     }
   ],
   "createdAt": 1791204952471,
-  "updatedAt": 1791570698541
+  "updatedAt": 1791815781262
 }

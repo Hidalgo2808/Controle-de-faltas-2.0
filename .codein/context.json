@@ -1,7 +1,7 @@
 {
   "projectName": "meu-projeto",
   "framework": "React 18 + TypeScript + Vite + Tailwind CSS",
-  "updatedAt": 1791570698545,
+  "updatedAt": 1791815781270,
   "domain": {
     "title": "Controle de Faltas",
     "tagline": "",
@@ -344,6 +344,7 @@
     "src/types/index.ts",
     "tailwind.config.js",
     "tsconfig.json",
+    "vercel.json",
     "vite.config.ts"
   ]
 }

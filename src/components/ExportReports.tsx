@@ -160,176 +160,169 @@ export const ExportReports: React.FC<ExportReportsProps> = ({
   // Faltas do mês selecionado
   const faltasMesSelecionado = useMemo(() => {
     const dadosMes = HISTORICO_MENSAL_FALTAS.find((h) => h.mesIndex === selectedMonth);
-    if (!dadosMes) return [];
-    if (unidadeFiltro === 'todas') return dadosMes.faltas;
-    const labelFiltro = regionalLabel[unidadeFiltro];
-    return dadosMes.faltas.filter((f) => f.regional === labelFiltro);
-  }, [selectedMonth, unidadeFiltro]);
+    return dadosMes ? dadosMes.faltas : [];
+  }, [selectedMonth]);
 
+  // Exportar CSV
   const handleExportCSV = () => {
-    let csv = `Relatório Operacional de Frequência\nData: ${dataFormatada}\nUnidade: ${regionalLabel[unidadeFiltro]}\n\n`;
-    csv += 'Veículo,Placa,Unidade,Colaborador,Cargo,Matrícula,Status,Motivo Falta,Substituto\n';
+    const rows = [
+      ['Data', 'Unidade', 'Veículo', 'Placa', 'Colaborador', 'Cargo', 'Status', 'Motivo da Falta', 'Substituto'],
+      ...(todosColaboradores || []).map(({ colab, veiculo }) => [
+        dataFormatada,
+        regionalLabel[veiculo.regional] || veiculo.regional,
+        veiculo.prefixo,
+        veiculo.placa,
+        colaboradorNome(colab),
+        colab.cargo || '',
+        colab.status,
+        colab.motivoFalta || '',
+        colab.substitutoNome || '',
+      ]),
+    ];
 
-    todosColaboradores.forEach(({ colab, veiculo }) => {
-      csv += `"${veiculo.prefixo}","${veiculo.placa}","${regionalLabel[veiculo.regional]}","${colab.nome}","${colab.cargo}","${colab.matricula || ''}","${colab.status}","${colab.motivoFalta || ''}","${colab.substitutoNome || ''}"\n`;
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + rows.map((e) => e.join(';')).join('\n');
+    const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `relatorio_frequencia_${dataFormatada.replace(/\//g, '-')}.csv`);
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `relatorio_faltas_${dataFormatada.replace(/\//g, '-')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
+  function colaboradorNome(c: Colaborador) {
+    if (c.status === 'substituto' && c.substitutoNome) {
+      return `${c.substitutoNome} (Subst: ${c.nome})`;
+    }
+    return c.nome;
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header com Filtros de Unidade e Ações */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-card/60 border border-border">
-        <div>
-          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5 text-primary" />
-            Relatórios e Histórico de Faltas
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Visualize faltas diárias, absenteísmo acumulado por mês e exporte dados consolidados.
-          </p>
+      {/* Header do Relatório */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card/60 backdrop-blur-md p-6 rounded-2xl border border-border shadow-xl">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-sm">
+            <FileSpreadsheet className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Relatórios de Presença e Faltas</h2>
+            <p className="text-sm text-muted-foreground">
+              Consolidação analítica do efetivo diário e histórico mensal por regional
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <select
-            value={unidadeFiltro}
-            onChange={(e) => setUnidadeFiltro(e.target.value as Regional)}
-            className="h-9 px-3 text-xs bg-muted/50 border border-border rounded-xl text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="todas">Todas as Unidades</option>
-            <option value="ribas">Ribas do Rio Pardo</option>
-            <option value="agua_clara">Água Clara</option>
-          </select>
-
-          <Button
-            onClick={handleExportCSV}
-            size="sm"
-            className="gap-1.5 h-9 text-xs font-semibold shadow-md"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Exportar CSV
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.print()}
-            className="gap-1.5 h-9 text-xs font-medium border-border"
-          >
-            <Printer className="w-3.5 h-3.5 text-muted-foreground" />
-            Imprimir
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button onClick={handleExportCSV} className="w-full sm:w-auto gap-2 shadow-md">
+            <Download className="w-4 h-4" />
+            Exportar CSV / Excel
           </Button>
         </div>
       </div>
 
-      {/* Visão de Faltas Diárias e Mensais */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Faltas do Dia */}
-        <Card className="border-border/80 bg-card/60">
-          <CardHeader className="pb-3 border-b border-border/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <UserX className="w-4 h-4 text-rose-400" />
-                  Faltas Registradas Hoje ({dataFormatada})
-                </CardTitle>
-                <CardDescription className="text-xs mt-0.5">
-                  Colaboradores ausentes nas turmas no dia selecionado
-                </CardDescription>
-              </div>
-              <Badge variant="outline" className="text-xs text-rose-400 border-rose-500/30">
-                {faltasDoDia.length} ausência(s)
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 space-y-3">
-            {faltasDoDia.length === 0 ? (
-              <div className="text-center py-8 text-xs text-muted-foreground">
-                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-80" />
-                Nenhuma falta registrada para hoje nesta unidade.
-              </div>
-            ) : (
-              faltasDoDia.map(({ colab, veiculo }) => (
-                <div
-                  key={colab.id}
-                  className="p-3 rounded-xl border border-rose-500/20 bg-rose-500/[0.04] flex items-center justify-between gap-3"
-                >
-                  <div className="min-w-0">
-                    <p className="font-bold text-xs text-foreground truncate">{colab.nome}</p>
-                    <p className="text-[11px] text-muted-foreground truncate">{colab.cargo} • {veiculo.prefixo}</p>
-                    <p className="text-[10px] text-rose-400 font-medium mt-0.5">
-                      Motivo: {colab.motivoFalta || 'Não informado'}
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] border-border shrink-0">
-                    {regionalLabel[veiculo.regional]}
-                  </Badge>
-                </div>
-              ))
-            )}
+      {/* Filtros do Relatório */}
+      <Card className="border-border bg-card/40">
+        <CardContent className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-semibold text-muted-foreground uppercase">Filtrar Unidade:</span>
+            <select
+              value={unidadeFiltro}
+              onChange={(e) => setUnidadeFiltro(e.target.value as Regional)}
+              className="h-9 px-3 text-xs sm:text-sm bg-muted/40 border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="todas">Todas as Unidades</option>
+              <option value="ribas">Ribas do Rio Pardo</option>
+              <option value="agua_clara">Água Clara</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-semibold text-muted-foreground uppercase">Histórico Mês:</span>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="h-9 px-3 text-xs sm:text-sm bg-muted/40 border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {MESES.map((m, idx) => (
+                <option key={m} value={idx}>{m}</option>
+              ))}
+            </select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Cards de Métricas */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <Card className="border-border bg-card/40">
+          <CardContent className="p-4 sm:p-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase">Efetivo Alocado</p>
+            <h3 className="text-2xl font-black text-foreground mt-1">{stats.totalGeral}</h3>
+            <span className="text-[11px] text-muted-foreground mt-1 block">em {stats.totalVeiculos} veículos</span>
           </CardContent>
         </Card>
 
-        {/* Histórico Mensal de Faltas */}
-        <Card className="border-border/80 bg-card/60">
-          <CardHeader className="pb-3 border-b border-border/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-primary" />
-                  Absenteísmo Mensal
-                </CardTitle>
-                <CardDescription className="text-xs mt-0.5">
-                  Histórico acumulado de faltas por colaborador
-                </CardDescription>
-              </div>
+        <Card className="border-border bg-card/40">
+          <CardContent className="p-4 sm:p-5">
+            <p className="text-xs font-semibold text-emerald-400 uppercase">Presentes</p>
+            <h3 className="text-2xl font-black text-emerald-400 mt-1">{stats.totalPresentes}</h3>
+            <span className="text-[11px] text-emerald-400/80 mt-1 block">{stats.taxaPresenca}% de aderência</span>
+          </CardContent>
+        </Card>
 
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="h-8 px-2.5 text-xs bg-muted/60 border border-border rounded-lg text-foreground font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+        <Card className="border-border bg-card/40">
+          <CardContent className="p-4 sm:p-5">
+            <p className="text-xs font-semibold text-rose-400 uppercase">Faltas Registradas</p>
+            <h3 className="text-2xl font-black text-rose-400 mt-1">{stats.totalFaltas}</h3>
+            <span className="text-[11px] text-rose-400/80 mt-1 block">no dia atual</span>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card/40">
+          <CardContent className="p-4 sm:p-5">
+            <p className="text-xs font-semibold text-amber-400 uppercase">Substituições</p>
+            <h3 className="text-2xl font-black text-amber-400 mt-1">{stats.totalSubst}</h3>
+            <span className="text-[11px] text-amber-400/80 mt-1 block">banco reserva ativo</span>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Ranking / Faltas Recorrentes do Mês Selecionado */}
+      <Card className="border-border bg-card/40">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-5 h-5 text-rose-400" />
+            <CardTitle className="text-base font-bold">Faltas no Mês de {MESES[selectedMonth]}</CardTitle>
+          </div>
+          <CardDescription>Colaboradores com registros de ausência acumulados no período</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2.5">
+            {faltasMesSelecionado.map((f, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/50 text-xs sm:text-sm"
               >
-                {MESES.map((m, idx) => (
-                  <option key={m} value={idx}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 space-y-3">
-            {faltasMesSelecionado.length === 0 ? (
-              <div className="text-center py-8 text-xs text-muted-foreground">
-                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-80" />
-                Nenhum registro de falta acumulada para {MESES[selectedMonth]}.
-              </div>
-            ) : (
-              faltasMesSelecionado.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="p-3 rounded-xl border border-border/80 bg-muted/20 flex items-center justify-between gap-3"
-                >
-                  <div className="min-w-0">
-                    <p className="font-bold text-xs text-foreground truncate">{item.nome}</p>
-                    <p className="text-[11px] text-muted-foreground truncate">{item.cargo} • {item.regional}</p>
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-400 font-bold flex items-center justify-center text-xs shrink-0">
+                    {i + 1}
+                  </span>
+                  <div>
+                    <p className="font-bold text-foreground">{f.nome}</p>
+                    <p className="text-[11px] text-muted-foreground">{f.cargo} • {f.regional}</p>
                   </div>
-                  <Badge variant="destructive" className="text-xs font-bold shrink-0">
-                    {item.totalFaltas} falta(s)
-                  </Badge>
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
+
+                <Badge variant="destructive" className="font-mono text-xs">
+                  {f.totalFaltas} {f.totalFaltas === 1 ? 'falta' : 'faltas'}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
