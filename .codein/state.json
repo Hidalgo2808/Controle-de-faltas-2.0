@@ -3,23 +3,37 @@
   "framework": "React 18 + Vite + Tailwind CSS",
   "architecturalDecisions": [],
   "activeWorkingSet": [
-    "vercel.json",
     "package.json",
+    "vercel.json",
+    "src/components/TeamsManagement.tsx",
+    "src/App.tsx",
     "src/data/mockData.ts",
     "src/components/AttendanceModal.tsx",
     "src/components/CollaboratorsManagement.tsx",
     "src/components/ExportReports.tsx",
     "src/index.css",
     "src/components/Navbar.tsx",
-    "src/App.tsx",
     "src/components/MetricsHeader.tsx",
-    "src/components/TeamsManagement.tsx",
     "src/components/VehicleCardGrid.tsx",
     "src/components/NewTeamModal.tsx",
     "src/components/ComponentShowcase.tsx",
     "src/components/VehicleTopView.tsx"
   ],
   "commitLedger": [
+    {
+      "id": "Ew9tLW7ZzvLbk-7vBOIs9",
+      "timestamp": 1791816071642,
+      "prompt": "npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:\nnpm warn install-scripts   esbuild@0.21.5 (postinstall: node install.js)\nnpm warn install-scripts\nnpm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.\n\ncorrigir esse erro na vercel",
+      "summary": "Para resolver em definitivo esse aviso e o erro de build na Vercel (`esbuild` bloqueado por restrições de script pós-instalação ou permissão 126), precisamos: 1. **Incluir `@esbuild/linux-x64` em `op",
+      "filesCreated": [],
+      "filesModified": [
+        "package.json",
+        "vercel.json",
+        "src/components/TeamsManagement.tsx",
+        "src/App.tsx"
+      ],
+      "filesDeleted": []
+    },
     {
       "id": "RRbqN3EgMxUeYEtW1C19j",
       "timestamp": 1791815781258,
@@ -376,21 +390,8 @@
         "src/App.tsx"
       ],
       "filesDeleted": []
-    },
-    {
-      "id": "YWS5QnN0_1OCKspuaDPLL",
-      "timestamp": 1791457670979,
-      "prompt": "O preview do projeto gerou uma EXCEÇÃO DE RUNTIME / TELA BRANCA no navegador:\n\nERRO CAPTURADO:\n```\nAn iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.\nOrigem: http://127.0.0.1:8080/src/components/ExportReports.tsx?t=1791457338012:225\n```\n\nINSTRUÇÕES OBRIGATÓRIAS PARA A IA:\n1. Inspecione o arquivo onde o erro ocorre e rastreie os componentes envolvidos.\n2. Se houver propriedades nulas ou variáveis indefinidas, adicione verificações seguras e optional chaining (?.).\n3. Aplique as correções diretamente nos arquivos e garanta que o projeto renderize no preview.",
-      "summary": "```tsx:src/components/ExportReports.tsx import React, { useState, useMemo } from 'react'; import { Download, Calendar, Users, Car, TrendingUp, CheckCircle2, Printer, UserCheck, UserX, RefreshCw, FileS",
-      "filesCreated": [],
-      "filesModified": [
-        "src/components/ExportReports.tsx",
-        "src/App.tsx",
-        "src/components/ComponentShowcase.tsx"
-      ],
-      "filesDeleted": []
     }
   ],
   "createdAt": 1791204952471,
-  "updatedAt": 1791815781262
+  "updatedAt": 1791816071644
 }

@@ -7,9 +7,9 @@ import { TeamsManagement } from './components/TeamsManagement';
 import { ExportReports } from './components/ExportReports';
 import { NewTeamModal } from './components/NewTeamModal';
 import { VEICULOS_INICIAIS, COLABORADORES_RESERVA } from './data/mockData';
-import { Regional, StatusPresenca, MotivoFalta, Colaborador, Veiculo } from './types';
+import { Veiculo, Colaborador, Regional } from './types';
 
-export function App() {
+export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'veiculos' | 'colaboradores' | 'equipes' | 'relatorios'>('veiculos');
   const [selectedRegional, setSelectedRegional] = useState<Regional>('todas');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -17,140 +17,124 @@ export function App() {
   const [colaboradoresReserva, setColaboradoresReserva] = useState<Colaborador[]>(COLABORADORES_RESERVA);
   const [isNewTeamModalOpen, setIsNewTeamModalOpen] = useState(false);
 
-  // Atualização do status de presença/falta de um colaborador
-  const handleUpdateStatus = (
-    veiculoId: string,
-    colaboradorId: string,
-    novoStatus: StatusPresenca,
-    motivoFalta?: MotivoFalta,
-    substituto?: Colaborador
-  ) => {
+  // Manipulador para atualizar um veículo no estado geral
+  const handleUpdateVeiculo = (veiculoAtualizado: Veiculo) => {
     setVeiculos((prev) =>
-      prev.map((v) => {
-        if (v.id !== veiculoId) return v;
-
-        const updatedAssentos = { ...v.assentos };
-        (Object.keys(updatedAssentos) as Array<keyof typeof updatedAssentos>).forEach((key) => {
-          const colab = updatedAssentos[key];
-          if (colab && colab.id === colaboradorId) {
-            updatedAssentos[key] = {
-              ...colab,
-              status: novoStatus,
-              motivoFalta: novoStatus === 'falta' ? motivoFalta : undefined,
-              substitutoId: novoStatus === 'substituto' ? substituto?.id : undefined,
-              substitutoNome: novoStatus === 'substituto' ? substituto?.nome : undefined,
-            };
-          }
-        });
-
-        return { ...v, assentos: updatedAssentos };
-      })
+      prev.map((v) => (v.id === veiculoAtualizado.id ? veiculoAtualizado : v))
     );
   };
 
-  // Cadastro de novo veículo / equipe
-  const handleSaveNewTeam = (newTeamData: any) => {
-    const newVeiculo: Veiculo = {
+  // Manipulador para cadastrar nova equipe vinculada ou criar novo veículo
+  const handleCriarNovaEquipe = (novaEquipe: {
+    codigo: string;
+    regional: 'ribas' | 'agua_clara';
+    veiculoPrefixo: string;
+    veiculoPlaca: string;
+    motorista: { nome: string; cargo: string; telefone: string };
+    operador2: { nome: string; cargo: string; telefone: string };
+  }) => {
+    const novoVeiculo: Veiculo = {
       id: `vtr-${Date.now()}`,
-      prefixo: newTeamData.prefixo || 'CARRO NOVO',
-      placa: newTeamData.placa || 'NEW-0000',
-      modelo: newTeamData.modelo || 'Veículo Operacional',
-      ano: 2024,
-      regional: newTeamData.regional || 'ribas',
+      prefixo: novaEquipe.veiculoPrefixo || `CARRO ${Math.floor(Math.random() * 900) + 100}`,
+      placa: novaEquipe.veiculoPlaca || 'BRA-2024',
+      modelo: 'Toyota Hilux 4x4 CS',
+      ano: new Date().getFullYear(),
+      regional: novaEquipe.regional,
       statusOperacional: 'ativo',
-      equipe1Codigo: `EQ-${Date.now()}A`,
-      equipe2Codigo: `EQ-${Date.now()}B`,
+      equipe1Codigo: novaEquipe.codigo,
+      equipe2Codigo: `${novaEquipe.codigo}-B`,
       assentos: {
         motorista: {
           id: `col-${Date.now()}-1`,
-          nome: 'Motorista Titular',
-          cargo: 'Motorista Operador',
-          matricula: `MAT-${Math.floor(1000 + Math.random() * 9000)}`,
-          foto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-          telefone: '(67) 99999-0001',
+          nome: novaEquipe.motorista.nome,
+          cargo: novaEquipe.motorista.cargo || 'Motorista Operador',
+          matricula: `MAT-${Math.floor(Math.random() * 8000) + 1000}`,
+          foto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+          telefone: novaEquipe.motorista.telefone || '(67) 99999-0000',
           status: 'presente',
-          equipeId: `EQ-${Date.now()}A`,
+          equipeId: novaEquipe.codigo,
           equipeNumero: 1,
           posicaoVeiculo: 'motorista',
         },
         frenteDir: {
           id: `col-${Date.now()}-2`,
-          nome: 'Ajudante Operacional',
-          cargo: 'Ajudante Geral',
-          matricula: `MAT-${Math.floor(1000 + Math.random() * 9000)}`,
-          foto: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80',
-          telefone: '(67) 99999-0002',
+          nome: novaEquipe.operador2.nome,
+          cargo: novaEquipe.operador2.cargo || 'Operador Florestal',
+          matricula: `MAT-${Math.floor(Math.random() * 8000) + 1000}`,
+          foto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+          telefone: novaEquipe.operador2.telefone || '(67) 99999-0000',
           status: 'presente',
-          equipeId: `EQ-${Date.now()}A`,
+          equipeId: novaEquipe.codigo,
           equipeNumero: 1,
           posicaoVeiculo: 'frente_dir',
         },
         trasEsq: {
           id: `col-${Date.now()}-3`,
-          nome: 'Operador Técnico',
-          cargo: 'Técnico de Campo',
-          matricula: `MAT-${Math.floor(1000 + Math.random() * 9000)}`,
-          foto: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&auto=format&fit=crop&q=80',
-          telefone: '(67) 99999-0003',
+          nome: 'Auxiliar Operacional I',
+          cargo: 'Ajudante Geral',
+          matricula: `MAT-${Math.floor(Math.random() * 8000) + 1000}`,
+          foto: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+          telefone: '(67) 99999-0001',
           status: 'presente',
-          equipeId: `EQ-${Date.now()}B`,
+          equipeId: `${novaEquipe.codigo}-B`,
           equipeNumero: 2,
           posicaoVeiculo: 'tras_esq',
         },
         trasDir: {
           id: `col-${Date.now()}-4`,
-          nome: 'Assistente Florestal',
-          cargo: 'Operador de Máquina',
-          matricula: `MAT-${Math.floor(1000 + Math.random() * 9000)}`,
-          foto: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
-          telefone: '(67) 99999-0004',
+          nome: 'Auxiliar Operacional II',
+          cargo: 'Ajudante de Campo',
+          matricula: `MAT-${Math.floor(Math.random() * 8000) + 1000}`,
+          foto: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
+          telefone: '(67) 99999-0002',
           status: 'presente',
-          equipeId: `EQ-${Date.now()}B`,
+          equipeId: `${novaEquipe.codigo}-B`,
           equipeNumero: 2,
           posicaoVeiculo: 'tras_dir',
         },
       },
     };
 
-    setVeiculos((prev) => [newVeiculo, ...prev]);
+    setVeiculos((prev) => [novoVeiculo, ...prev]);
+    setIsNewTeamModalOpen(false);
   };
 
-  // Importação e adição de colaboradores
-  const handleImportarColaboradores = (novos: ColaboradorCompleto[]) => {
-    const novosReserva: Colaborador[] = novos.map((n) => ({
-      id: n.id,
-      nome: n.nome,
-      cargo: n.cargo,
-      matricula: n.matricula,
-      foto: n.foto,
-      telefone: n.telefone,
-      status: n.status,
-      equipeId: 'reserva',
-      equipeNumero: 1,
-      posicaoVeiculo: 'motorista',
-    }));
-    setColaboradoresReserva((prev) => [...prev, ...novosReserva]);
-  };
-
-  const handleAdicionarColaborador = (novo: ColaboradorCompleto) => {
-    const novoReserva: Colaborador = {
-      id: novo.id,
-      nome: novo.nome,
-      cargo: novo.cargo,
-      matricula: novo.matricula,
-      foto: novo.foto,
-      telefone: novo.telefone,
-      status: novo.status,
+  // Manipulador para inclusão manual ou importação de colaboradores
+  const handleAdicionarColaborador = (novoColab: ColaboradorCompleto) => {
+    const colaboradorReserva: Colaborador = {
+      id: novoColab.id,
+      nome: novoColab.nome,
+      cargo: novoColab.cargo,
+      matricula: novoColab.matricula,
+      foto: novoColab.foto || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+      telefone: novoColab.telefone,
+      status: novoColab.status,
       equipeId: 'reserva',
       equipeNumero: 1,
       posicaoVeiculo: 'motorista',
     };
-    setColaboradoresReserva((prev) => [novoReserva, ...prev]);
+    setColaboradoresReserva((prev) => [colaboradorReserva, ...prev]);
+  };
+
+  const handleImportarColaboradores = (novosColaboradores: ColaboradorCompleto[]) => {
+    const convertidos: Colaborador[] = novosColaboradores.map((nc) => ({
+      id: nc.id,
+      nome: nc.nome,
+      cargo: nc.cargo,
+      matricula: nc.matricula,
+      foto: nc.foto || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+      telefone: nc.telefone,
+      status: nc.status,
+      equipeId: 'reserva',
+      equipeNumero: 1,
+      posicaoVeiculo: 'motorista',
+    }));
+    setColaboradoresReserva((prev) => [...convertidos, ...prev]);
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col bg-modern-grid">
-      {/* Barra de Navegação Superior */}
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-emerald-500/20 selection:text-emerald-300">
+      {/* Barra de Navegação Superior Oficial */}
       <Navbar
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -158,32 +142,32 @@ export function App() {
         onRegionalChange={setSelectedRegional}
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
+        onNovaEquipeClick={() => setIsNewTeamModalOpen(true)}
       />
 
-      {/* Conteúdo Principal */}
+      {/* Conteúdo Principal da Aplicação */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Aba de Veículos & Escala */}
+        {/* Visualização de Veículos e Escala de Presença */}
         {activeTab === 'veiculos' && (
           <div className="space-y-6">
             <MetricsHeader
               veiculos={veiculos}
               selectedRegional={selectedRegional}
               selectedDate={selectedDate}
-              onFiltroRegionalChange={(r) => setSelectedRegional(r)}
+              onFiltroRegionalChange={setSelectedRegional}
               onNovaEquipe={() => setIsNewTeamModalOpen(true)}
             />
 
             <VehicleCardGrid
               veiculos={veiculos}
-              colaboradoresReserva={colaboradoresReserva}
-              onUpdateStatus={handleUpdateStatus}
               selectedRegional={selectedRegional}
-              onOpenNewTeamModal={() => setIsNewTeamModalOpen(true)}
+              colaboradoresReserva={colaboradoresReserva}
+              onUpdateVeiculo={handleUpdateVeiculo}
             />
           </div>
         )}
 
-        {/* Aba de Colaboradores */}
+        {/* Gestão Completa de Colaboradores */}
         {activeTab === 'colaboradores' && (
           <CollaboratorsManagement
             veiculos={veiculos}
@@ -193,34 +177,43 @@ export function App() {
           />
         )}
 
-        {/* Aba de Equipes */}
+        {/* Gestão das Equipes Florestais */}
         {activeTab === 'equipes' && (
           <TeamsManagement
             veiculos={veiculos}
             selectedRegional={selectedRegional}
+            onNovaEquipe={() => setIsNewTeamModalOpen(true)}
             onNovaEquipeClick={() => setIsNewTeamModalOpen(true)}
           />
         )}
 
-        {/* Aba de Relatórios */}
+        {/* Relatórios Gerenciais e Exportação */}
         {activeTab === 'relatorios' && (
           <ExportReports
             veiculos={veiculos}
+            colaboradoresReserva={colaboradoresReserva}
             selectedRegional={selectedRegional}
             selectedDate={selectedDate}
           />
         )}
       </main>
 
-      {/* Modal de Cadastro de Nova Equipe / Veículo */}
+      {/* Modal de Criação de Nova Equipe */}
       <NewTeamModal
         isOpen={isNewTeamModalOpen}
         onClose={() => setIsNewTeamModalOpen(false)}
-        onSave={handleSaveNewTeam}
-        colaboradoresReserva={colaboradoresReserva}
+        onSave={handleCriarNovaEquipe}
       />
+
+      {/* Rodapé Institucional */}
+      <footer className="border-t border-border/60 bg-card/30 backdrop-blur-md py-4 text-center text-xs text-muted-foreground mt-auto">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <span>Controle de Faltas Operacional Florestal · Versão 2.4.0</span>
+          <span>Polos Ribas do Rio Pardo & Água Clara - MS</span>
+        </div>
+      </footer>
     </div>
   );
-}
+};
 
 export default App;
