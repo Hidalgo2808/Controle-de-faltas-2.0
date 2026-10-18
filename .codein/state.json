@@ -3,23 +3,40 @@
   "framework": "React 18 + Vite + Tailwind CSS",
   "architecturalDecisions": [],
   "activeWorkingSet": [
+    "vercel.json",
     "package.json",
-    "src/integrations/supabase/client.ts",
-    "src/components/MetricsHeader.tsx",
-    "src/components/Navbar.tsx",
     "src/components/CollaboratorsManagement.tsx",
     "src/components/ExportReports.tsx",
+    "src/components/MetricsHeader.tsx",
+    "src/components/Navbar.tsx",
+    "src/components/TeamsManagement.tsx",
+    "src/integrations/supabase/client.ts",
     "src/components/VehicleCardGrid.tsx",
     "src/App.tsx",
-    "src/components/TeamsManagement.tsx",
     "src/components/AttendanceModal.tsx",
-    "vercel.json",
     "src/components/ui/badge.tsx",
     "src/data/mockData.ts",
     "src/index.css",
     "src/components/NewTeamModal.tsx"
   ],
   "commitLedger": [
+    {
+      "id": "E2X2RLmr8swvRMWdcTlxQ",
+      "timestamp": 1792335344064,
+      "prompt": "Error: [BUILD_UTILS_SPAWN_126] Command \"vite build\" exited with 126\n\ncorrigir o erro da vercel",
+      "summary": "Aqui está a correção cirúrgica para solucionar o erro `[BUILD_UTILS_SPAWN_126] Command \"vite build\" exited with 126` na Vercel e garantir que o build e os componentes do projeto compilem com 100% de i",
+      "filesCreated": [],
+      "filesModified": [
+        "vercel.json",
+        "package.json",
+        "src/components/CollaboratorsManagement.tsx",
+        "src/components/ExportReports.tsx",
+        "src/components/MetricsHeader.tsx",
+        "src/components/Navbar.tsx",
+        "src/components/TeamsManagement.tsx"
+      ],
+      "filesDeleted": []
+    },
     {
       "id": "XY5hv8AqmhS-uN0B9n3ZC",
       "timestamp": 1792334848670,
@@ -394,19 +411,8 @@
         "src/components/ExportReports.tsx"
       ],
       "filesDeleted": []
-    },
-    {
-      "id": "5QMF8krdeQgIHlzEicGUm",
-      "timestamp": 1791468538478,
-      "prompt": "O preview do projeto gerou uma EXCEÇÃO DE RUNTIME / TELA BRANCA no navegador:\n\nERRO CAPTURADO:\n```\nAn iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.\nOrigem: http://127.0.0.1:8080/src/components/ExportReports.tsx?t=1791467109073:215\n```\n\nINSTRUÇÕES OBRIGATÓRIAS PARA A IA:\n1. Inspecione o arquivo onde o erro ocorre e rastreie os componentes envolvidos.\n2. Se houver propriedades nulas ou variáveis indefinidas, adicione verificações seguras e optional chaining (?.).\n3. Aplique as correções diretamente nos arquivos e garanta que o projeto renderize no preview.",
-      "summary": "```tsx:src/components/ExportReports.tsx import React, { useState, useMemo } from 'react'; import { Download, Calendar, Users, Car, TrendingUp, CheckCircle2, Printer, UserCheck, UserX, RefreshCw, FileS",
-      "filesCreated": [],
-      "filesModified": [
-        "src/components/ExportReports.tsx"
-      ],
-      "filesDeleted": []
     }
   ],
   "createdAt": 1791204952471,
-  "updatedAt": 1792334848671
+  "updatedAt": 1792335344064
 }

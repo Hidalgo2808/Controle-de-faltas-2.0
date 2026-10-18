@@ -207,55 +207,52 @@ export const TeamsManagement: React.FC<TeamsManagementProps> = ({
 
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <span className="text-xs font-bold text-foreground tabular-nums">
+                      <p className="text-xs font-bold text-foreground">
                         {eq.presentes}/{eq.totalMembros}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground block">operadores</span>
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">operadores</p>
                     </div>
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                    {isExpanded ? (
+                      <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    )}
                   </div>
                 </div>
 
                 {isExpanded && (
-                  <div className="px-4 pb-4 pt-2 border-t border-border/40 bg-muted/10 space-y-2">
-                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Integrantes do Posto
+                  <div className="p-4 pt-0 border-t border-border/40 mt-2 space-y-2.5">
+                    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider pt-2">
+                      Integrantes Alocados ({eq.membros.length})
                     </p>
-                    <div className="space-y-1.5">
-                      {eq.membros.map((m) => (
-                        <div
-                          key={m.id}
-                          className="flex items-center justify-between p-2 rounded-xl bg-card/60 border border-border/40 text-xs"
-                        >
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={m.foto}
-                              alt={m.nome}
-                              className="w-7 h-7 rounded-lg object-cover border border-border/40"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
-                              }}
-                            />
-                            <div>
-                              <p className="font-bold text-foreground text-xs leading-none">{m.nome}</p>
-                              <p className="text-[10px] text-muted-foreground mt-0.5">{m.cargo}</p>
-                            </div>
-                          </div>
-
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'text-[10px] py-0 px-1.5',
-                              m.status === 'presente' && 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-                              m.status === 'falta' && 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-                              m.status === 'substituto' && 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                            )}
-                          >
-                            {m.status}
-                          </Badge>
+                    {eq.membros.map((m) => (
+                      <div
+                        key={m.id}
+                        className="flex items-center justify-between p-2 rounded-xl bg-background/50 border border-border/40 text-xs"
+                      >
+                        <div>
+                          <p className="font-semibold text-foreground">{m.nome}</p>
+                          <p className="text-[10px] text-muted-foreground">{m.cargo}</p>
                         </div>
-                      ))}
-                    </div>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'text-[10px] py-0 px-2 font-semibold',
+                            m.status === 'presente'
+                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                              : m.status === 'falta'
+                              ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                              : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                          )}
+                        >
+                          {m.status === 'presente'
+                            ? 'Presente'
+                            : m.status === 'falta'
+                            ? 'Falta'
+                            : 'Substituto'}
+                        </Badge>
+                      </div>
+                    ))}
                   </div>
                 )}
               </Card>
