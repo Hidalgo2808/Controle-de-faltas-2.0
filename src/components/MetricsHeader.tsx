@@ -107,8 +107,8 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
   const cards = [
     {
       key: '2',
-      label: 'Duplas',
-      descricao: '2 operadores',
+      label: 'Duplas Operacionais',
+      descricao: '2 operadores ativos',
       total: equipesCom2,
       icon: <Users className="w-5 h-5 text-emerald-400" />,
       numColor: 'text-emerald-300',
@@ -118,8 +118,8 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
     },
     {
       key: '3',
-      label: 'Trios',
-      descricao: '3 operadores',
+      label: 'Trios / Postos Cheios',
+      descricao: '3+ operadores ativos',
       total: equipesCom3,
       icon: <UsersRound className="w-5 h-5 text-teal-400" />,
       numColor: 'text-teal-300',
@@ -133,20 +133,36 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
     <div className="w-full space-y-3">
       <div className="w-full rounded-2xl border border-border/50 bg-card/70 backdrop-blur-md shadow-xl overflow-hidden">
         <div className="px-5 pt-4 pb-3 border-b border-border/40 bg-gradient-to-r from-muted/30 to-muted/10 space-y-3">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
-              <TrendingUp className="w-3.5 h-3.5 text-primary" />
+          <div className="flex items-center gap-2.5 flex-wrap justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <span className="text-sm font-bold text-foreground">Composição de Equipes</span>
+              <div
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold',
+                  colors.badge
+                )}
+              >
+                <span className={cn('w-1.5 h-1.5 rounded-full', colors.dot)} />
+                <span>{activePanelInfo?.label ?? 'Geral'}</span>
+                <span className="opacity-60">·</span>
+                <span className="tabular-nums">{totalEquipes} equipes</span>
+              </div>
             </div>
-            <span className="text-sm font-bold text-foreground">Composição de Equipes</span>
-            <div className={cn(
-              'flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold',
-              colors.badge
-            )}>
-              <span className={cn('w-1.5 h-1.5 rounded-full', colors.dot)} />
-              <span>{activePanelInfo?.label ?? 'Geral'}</span>
-              <span className="opacity-60">·</span>
-              <span className="tabular-nums">{totalEquipes} equipes</span>
-            </div>
+
+            {onNovaEquipe && (
+              <Button
+                type="button"
+                onClick={onNovaEquipe}
+                size="sm"
+                className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Nova Equipe</span>
+              </Button>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -164,10 +180,12 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
               >
                 <span className={cn('w-1.5 h-1.5 rounded-full', btn.dot)} />
                 {btn.label}
-                <span className={cn(
-                  'ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums',
-                  activePanel === btn.key ? 'bg-white/20' : 'bg-muted text-muted-foreground'
-                )}>
+                <span
+                  className={cn(
+                    'ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums',
+                    activePanel === btn.key ? 'bg-white/20' : 'bg-muted text-muted-foreground'
+                  )}
+                >
                   {btn.count}
                 </span>
               </button>
@@ -176,7 +194,7 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
         </div>
 
         <div className="p-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {cards.map((card) => (
               <div
                 key={card.key}
@@ -204,19 +222,6 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
           </div>
         </div>
       </div>
-
-      {onNovaEquipe && (
-        <div className="flex items-center justify-end">
-          <Button
-            type="button"
-            onClick={onNovaEquipe}
-            className="w-full sm:w-auto px-5 py-2.5 h-auto text-sm font-bold gap-2 shadow-lg hover:shadow-primary/20 transition-all rounded-xl cursor-pointer"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Adicionar nova equipe</span>
-          </Button>
-        </div>
-      )}
     </div>
   );
 };

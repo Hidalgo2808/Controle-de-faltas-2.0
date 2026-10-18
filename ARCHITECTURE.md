@@ -1,13 +1,12 @@
 # 🗺️ Mapa de Arquitetura e Estrutura — Controle de Faltas
 
-> **Sincronizado automaticamente pelo Code In Engine** em `2026-10-18 14:16:15`
+> **Sincronizado automaticamente pelo Code In Engine** em `2026-10-18 14:47:28`
 > Este documento é a referência viva e em tempo real da arquitetura, componentes e entidades de negócio do projeto.
 
 ---
 
 ## 1. Visão Geral do Domínio e Identidade
 - **Nome do Projeto**: `Controle de Faltas`
-- **Headline / Proposta de Valor**: *"Recuperação de Inicialização"*
 - **Descrição**: Aplicação SPA modular desenvolvida sob medida com Vite, React, TypeScript e Tailwind CSS.
 - **Stack Tecnológica**: React 18 + TypeScript + Vite + Tailwind CSS
 - **Design Tokens**: Configurados em `src/index.css` e `tailwind.config.js`
@@ -55,7 +54,7 @@
 ### 📦 Componentes da Aplicação (Seções e Features):
 - **`src/components/AttendanceModal.tsx`** (AttendanceModal): Modal/Dialog interativo (AttendanceModal)
   - *Importado por*: `src/components/VehicleCardGrid.tsx`
-  - *Sub-componentes*: `src/components/ui/button.tsx`, `src/types/index.ts`, `src/data/mockData.ts`, `src/lib/utils.ts`
+  - *Sub-componentes*: `src/components/ui/button.tsx`, `src/components/ui/badge.tsx`, `src/types/index.ts`
 
 - **`src/components/CollaboratorsManagement.tsx`** (CollaboratorsManagement): Componente React modular (CollaboratorsManagement)
   - *Importado por*: `src/App.tsx`
@@ -87,7 +86,7 @@
 
 - **`src/components/VehicleCardGrid.tsx`** (VehicleCardGrid): Grid/Catálogo interativo de produtos com filtros e cards
   - *Importado por*: `src/App.tsx`
-  - *Sub-componentes*: `src/components/ui/card.tsx`, `src/components/ui/badge.tsx`, `src/components/ui/button.tsx`, `src/types/index.ts`, `src/components/AttendanceModal.tsx`, `src/lib/utils.ts`
+  - *Sub-componentes*: `src/types/index.ts`, `src/components/ui/card.tsx`, `src/components/ui/badge.tsx`, `src/components/AttendanceModal.tsx`, `src/lib/utils.ts`
 
 - **`src/components/VehicleTopView.tsx`** (VehicleTopView): Componente React modular (VehicleTopView)
   - *Importado por*: `src/components/ComponentShowcase.tsx`
@@ -103,6 +102,7 @@
 
 ## 5. Módulos Utilitários, Funções e Exports Reais
 - `src/data/mockData.ts`: Exporta [`COLABORADORES_RESERVA`, `VEICULOS_INICIAIS`]
+- `src/lib/supabase.ts`: Exporta [`supabase`]
 - `src/lib/utils.ts`: Exporta [`cn`]
 - `src/types/index.ts`: Exporta [`Regional`, `StatusPresenca`, `MotivoFalta`, `Colaborador`, `Equipe`, `Veiculo`, `MetricasGerais`]
 

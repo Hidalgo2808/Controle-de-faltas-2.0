@@ -19,6 +19,7 @@ ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS telefone TEXT;
 ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS status TEXT;
 ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS motivoFalta TEXT;
 ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS motivo_falta TEXT;
+ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS observacao TEXT;
 ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS substitutoNome TEXT;
 ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS substituto_nome TEXT;
 ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS equipeId TEXT;
@@ -56,30 +57,6 @@ ALTER TABLE public.registro_importados ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Permissao total anon/auth em registro_importados" ON public.registro_importados;
 CREATE POLICY "Permissao total anon/auth em registro_importados" ON public.registro_importados FOR ALL TO public USING (true) WITH CHECK (true);
 GRANT ALL ON TABLE public.registro_importados TO anon, authenticated, postgres, service_role;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, postgres, service_role;
-
--- ── Tabela: equipe_card_datas ───────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.equipe_card_datas (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
-ALTER TABLE public.equipe_card_datas ADD COLUMN IF NOT EXISTS codigo TEXT;
-ALTER TABLE public.equipe_card_datas ADD COLUMN IF NOT EXISTS numero TEXT;
-ALTER TABLE public.equipe_card_datas ADD COLUMN IF NOT EXISTS veiculoPrefixo TEXT;
-ALTER TABLE public.equipe_card_datas ADD COLUMN IF NOT EXISTS veiculo_prefixo TEXT;
-ALTER TABLE public.equipe_card_datas ADD COLUMN IF NOT EXISTS veiculoPlaca TEXT;
-ALTER TABLE public.equipe_card_datas ADD COLUMN IF NOT EXISTS veiculo_placa TEXT;
-ALTER TABLE public.equipe_card_datas ADD COLUMN IF NOT EXISTS regional TEXT;
-ALTER TABLE public.equipe_card_datas ADD COLUMN IF NOT EXISTS membros JSONB;
-ALTER TABLE public.equipe_card_datas ADD COLUMN IF NOT EXISTS lider TEXT;
-ALTER TABLE public.equipe_card_datas ADD COLUMN IF NOT EXISTS status TEXT;
-CREATE INDEX IF NOT EXISTS idx_equipe_card_datas_status ON public.equipe_card_datas (status);
-ALTER TABLE public.equipe_card_datas ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Permissao total anon/auth em equipe_card_datas" ON public.equipe_card_datas;
-CREATE POLICY "Permissao total anon/auth em equipe_card_datas" ON public.equipe_card_datas FOR ALL TO public USING (true) WITH CHECK (true);
-GRANT ALL ON TABLE public.equipe_card_datas TO anon, authenticated, postgres, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, postgres, service_role;
 
 -- ── Tabela: colaboradores_reservas ───────────────────────────────────

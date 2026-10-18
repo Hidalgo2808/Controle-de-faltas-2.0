@@ -1,10 +1,10 @@
 {
   "projectName": "meu-projeto",
   "framework": "React 18 + TypeScript + Vite + Tailwind CSS",
-  "updatedAt": 1792332975581,
+  "updatedAt": 1792334848674,
   "domain": {
     "title": "Controle de Faltas",
-    "tagline": "Recuperação de Inicialização",
+    "tagline": "",
     "description": "Aplicação SPA modular desenvolvida sob medida com Vite, React, TypeScript e Tailwind CSS.",
     "dataEntities": [],
     "features": []
@@ -22,8 +22,7 @@
         "src/components/ExportReports.tsx",
         "src/components/NewTeamModal.tsx",
         "src/data/mockData.ts",
-        "src/types/index.ts",
-        "src/components/ui/button.tsx"
+        "src/types/index.ts"
       ],
       "importedBy": [
         "src/main.tsx"
@@ -36,9 +35,8 @@
       "name": "AttendanceModal",
       "imports": [
         "src/components/ui/button.tsx",
-        "src/types/index.ts",
-        "src/data/mockData.ts",
-        "src/lib/utils.ts"
+        "src/components/ui/badge.tsx",
+        "src/types/index.ts"
       ],
       "importedBy": [
         "src/components/VehicleCardGrid.tsx"
@@ -157,6 +155,7 @@
         "src/lib/utils.ts"
       ],
       "importedBy": [
+        "src/components/AttendanceModal.tsx",
         "src/components/CollaboratorsManagement.tsx",
         "src/components/ExportReports.tsx",
         "src/components/Navbar.tsx",
@@ -173,14 +172,12 @@
         "src/lib/utils.ts"
       ],
       "importedBy": [
-        "src/App.tsx",
         "src/components/AttendanceModal.tsx",
         "src/components/CollaboratorsManagement.tsx",
         "src/components/ExportReports.tsx",
         "src/components/MetricsHeader.tsx",
         "src/components/NewTeamModal.tsx",
-        "src/components/TeamsManagement.tsx",
-        "src/components/VehicleCardGrid.tsx"
+        "src/components/TeamsManagement.tsx"
       ],
       "description": "Componente base de UI reutilizável (button)",
       "isUiBase": true
@@ -218,10 +215,9 @@
       "relPath": "src/components/VehicleCardGrid.tsx",
       "name": "VehicleCardGrid",
       "imports": [
+        "src/types/index.ts",
         "src/components/ui/card.tsx",
         "src/components/ui/badge.tsx",
-        "src/components/ui/button.tsx",
-        "src/types/index.ts",
         "src/components/AttendanceModal.tsx",
         "src/lib/utils.ts"
       ],
@@ -252,10 +248,25 @@
       ],
       "importedBy": [
         "src/App.tsx",
-        "src/components/AttendanceModal.tsx",
         "src/components/ComponentShowcase.tsx"
       ],
       "description": "Componente React modular (mockData)",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/integrations/supabase/client.ts",
+      "name": "client",
+      "imports": [],
+      "importedBy": [],
+      "description": "Componente React modular (client)",
+      "isUiBase": false
+    },
+    {
+      "relPath": "src/lib/supabase.ts",
+      "name": "supabase",
+      "imports": [],
+      "importedBy": [],
+      "description": "Componente React modular (supabase)",
       "isUiBase": false
     },
     {
@@ -263,7 +274,6 @@
       "name": "utils",
       "imports": [],
       "importedBy": [
-        "src/components/AttendanceModal.tsx",
         "src/components/CollaboratorsManagement.tsx",
         "src/components/ExportReports.tsx",
         "src/components/MetricsHeader.tsx",
@@ -338,9 +348,12 @@
     "src/components/VehicleTopView.tsx",
     "src/data/mockData.ts",
     "src/index.css",
+    "src/integrations/supabase/client.ts",
+    "src/lib/supabase.ts",
     "src/lib/utils.ts",
     "src/main.tsx",
     "src/types/index.ts",
+    "supabase/migrations/99999999999999_zero_loss_auto_sync.sql",
     "tailwind.config.js",
     "tsconfig.json",
     "vercel.json",

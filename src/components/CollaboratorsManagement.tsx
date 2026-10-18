@@ -8,7 +8,6 @@ import {
   ChevronUp,
   UserCheck,
   UserX,
-  RefreshCw,
   UploadCloud,
   FileSpreadsheet,
   Download,
@@ -18,7 +17,6 @@ import {
   Plus,
   Camera,
   Trash2,
-  IdCard,
   Building2,
   Briefcase,
   FileCheck,
@@ -28,7 +26,7 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Colaborador, Veiculo, StatusPresenca, Regional } from '../types';
+import { Colaborador, Veiculo, StatusPresenca, MotivoFalta, Regional } from '../types';
 
 export interface ColaboradorCompleto {
   id: string;
@@ -38,7 +36,8 @@ export interface ColaboradorCompleto {
   foto: string;
   telefone: string;
   status: StatusPresenca;
-  motivoFalta?: string;
+  motivoFalta?: MotivoFalta;
+  observacao?: string;
   substitutoNome?: string;
   equipeId: string;
   equipeNumero: 1 | 2;
@@ -51,6 +50,13 @@ export interface ColaboradorCompleto {
 export interface CollaboratorsManagementProps {
   veiculos?: Veiculo[];
   colaboradoresReserva?: Colaborador[];
+  selectedRegional?: Regional;
+  onUpdateColaboradorStatus?: (
+    colabId: string,
+    novoStatus: StatusPresenca,
+    motivo?: MotivoFalta,
+    obs?: string
+  ) => void;
   onImportarColaboradores?: (novosColaboradores: ColaboradorCompleto[]) => void;
   onAdicionarColaborador?: (novoColaborador: ColaboradorCompleto) => void;
 }
@@ -77,12 +83,14 @@ interface RegistroImportado {
 export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = ({
   veiculos = [],
   colaboradoresReserva = [],
+  selectedRegional = 'todas',
+  onUpdateColaboradorStatus,
   onImportarColaboradores,
   onAdicionarColaborador,
 }) => {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<StatusPresenca | 'todos'>('todos');
-  const [filterRegional, setFilterRegional] = useState<Regional | 'todas'>('todas');
+  const [filterRegional, setFilterRegional] = useState<Regional | 'todas'>(selectedRegional);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Estados do Modal de Cadastro Manual de Colaborador
@@ -127,6 +135,7 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
           telefone: colab.telefone ?? '',
           status: colab.status || 'presente',
           motivoFalta: colab.motivoFalta,
+          observacao: colab.observacao,
           substitutoNome: colab.substitutoNome,
           equipeId: colab.equipeId || '',
           equipeNumero: colab.equipeNumero || 1,
@@ -150,6 +159,7 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
         telefone: r.telefone || '',
         status: r.status || 'presente',
         motivoFalta: r.motivoFalta,
+        observacao: r.observacao,
         substitutoNome: r.substitutoNome,
         equipeId: 'reserva',
         equipeNumero: 1,
@@ -194,7 +204,6 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
     return { presentes, faltas, substitutos, total: todosColaboradores.length };
   }, [todosColaboradores]);
 
-  // Handler para Upload de Foto de Colaborador
   const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -211,39 +220,30 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
 
     setFormErro(null);
     const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setNovaFoto(event.target.result as string);
-      }
+    reader.onload = (uploadEvent) => {
+      setNovaFoto(uploadEvent.target?.result as string);
     };
     reader.readAsDataURL(file);
   };
 
-  const handleRemoverFoto = () => {
-    setNovaFoto('');
-    if (fotoInputRef.current) {
-      fotoInputRef.current.value = '';
-    }
-  };
-
-  const handleSalvarNovoColaborador = (e: React.FormEvent) => {
+  const handleCriarColaborador = (e: React.FormEvent) => {
     e.preventDefault();
     if (!novoNome.trim()) {
-      setFormErro('O nome do colaborador é obrigatório.');
+      setFormErro('O nome completo é obrigatório.');
       return;
     }
     if (!novoCargo.trim()) {
-      setFormErro('O cargo/função é obrigatório.');
+      setFormErro('A função/cargo é obrigatória.');
       return;
     }
 
-    const novoColab: ColaboradorCompleto = {
-      id: `manual-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    const novo: ColaboradorCompleto = {
+      id: `colab-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       nome: novoNome.trim(),
       cargo: novoCargo.trim(),
       matricula: novaMatricula.trim() || `MAT-${Math.floor(1000 + Math.random() * 9000)}`,
+      foto: novaFoto,
       telefone: novoTelefone.trim() || '(67) 99999-0000',
-      foto: novaFoto || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
       status: novoStatus,
       equipeId: 'reserva',
       equipeNumero: 1,
@@ -253,78 +253,19 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
       regional: novaUnidade,
     };
 
-    setColaboradoresAdicionados((prev) => [novoColab, ...prev]);
-    if (onAdicionarColaborador) {
-      onAdicionarColaborador(novoColab);
-    }
+    setColaboradoresAdicionados((prev) => [novo, ...prev]);
+    onAdicionarColaborador?.(novo);
 
-    // Reset formulário
     setNovoNome('');
     setNovoCargo('');
     setNovaMatricula('');
     setNovoTelefone('');
     setNovaFoto('');
-    setNovoStatus('presente');
     setFormErro(null);
     setModalNovoColaboradorAberto(false);
   };
 
-  // Parser para processar arquivo Excel / CSV
-  const processarTextoPlanilha = (conteudo: string) => {
-    const linhas = conteudo.split(/\r?\n/).filter((l) => l.trim().length > 0);
-    if (linhas.length < 2) {
-      throw new Error('O arquivo precisa conter uma linha de cabeçalho e pelo menos um registro.');
-    }
-
-    // Identifica separador: ';' ou ',' ou '\t'
-    const primeiraLinha = linhas[0];
-    let separador = ',';
-    if (primeiraLinha.includes(';')) separador = ';';
-    else if (primeiraLinha.includes('\t')) separador = '\t';
-
-    const normalizar = (s: string) =>
-      s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/['"]/g, '');
-
-    const cabecalhos = primeiraLinha.split(separador).map(normalizar);
-
-    const idxNome = cabecalhos.findIndex((c) => c.includes('nome') || c.includes('colaborador'));
-    const idxCargo = cabecalhos.findIndex((c) => c.includes('cargo') || c.includes('funcao') || c.includes('posto'));
-    const idxUnidade = cabecalhos.findIndex((c) => c.includes('unidade') || c.includes('regional') || c.includes('polo') || c.includes('cidade'));
-    const idxMatricula = cabecalhos.findIndex((c) => c.includes('matricula') || c.includes('registro') || c.includes('re'));
-    const idxTelefone = cabecalhos.findIndex((c) => c.includes('telefone') || c.includes('celular') || c.includes('contato'));
-
-    if (idxNome === -1) {
-      throw new Error('Coluna de "Nome" não encontrada no cabeçalho da planilha.');
-    }
-
-    const registros: RegistroImportado[] = [];
-
-    for (let i = 1; i < linhas.length; i++) {
-      const colunas = linhas[i].split(separador).map((c) => c.trim().replace(/^["']|["']$/g, ''));
-      const nome = colunas[idxNome];
-      if (!nome) continue;
-
-      const cargo = (idxCargo !== -1 && colunas[idxCargo]) ? colunas[idxCargo] : 'Operador Florestal';
-      const unidadeTexto = (idxUnidade !== -1 && colunas[idxUnidade]) ? normalizar(colunas[idxUnidade]) : 'ribas';
-
-      let unidade: 'ribas' | 'agua_clara' = 'ribas';
-      if (unidadeTexto.includes('agua') || unidadeTexto.includes('clara') || unidadeTexto.includes('agc')) {
-        unidade = 'agua_clara';
-      }
-
-      registros.push({
-        nome,
-        cargo,
-        unidade,
-        matricula: idxMatricula !== -1 && colunas[idxMatricula] ? colunas[idxMatricula] : undefined,
-        telefone: idxTelefone !== -1 && colunas[idxTelefone] ? colunas[idxTelefone] : undefined,
-      });
-    }
-
-    return registros;
-  };
-
-  const handleArquivoExcelSelecionado = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleArquivoSelecionado = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -333,42 +274,77 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
     setSucessoMsg(null);
 
     const reader = new FileReader();
-
     reader.onload = (event) => {
       try {
-        const conteudo = event.target?.result as string;
-        const registros = processarTextoPlanilha(conteudo);
+        const text = event.target?.result as string;
+        const linhas = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+        if (linhas.length < 2) {
+          setErroImportacao('A planilha deve conter um cabeçalho e pelo menos 1 linha de colaboradores.');
+          return;
+        }
+
+        const separador = linhas[0].includes(';') ? ';' : ',';
+        const cabecalho = linhas[0].split(separador).map((c) => c.trim().toLowerCase());
+
+        const idxNome = cabecalho.findIndex((c) => c.includes('nome') || c.includes('colaborador'));
+        const idxCargo = cabecalho.findIndex((c) => c.includes('cargo') || c.includes('função') || c.includes('funcao'));
+        const idxUnidade = cabecalho.findIndex((c) => c.includes('unidade') || c.includes('regional') || c.includes('polo'));
+        const idxMatricula = cabecalho.findIndex((c) => c.includes('matricula') || c.includes('matrícula') || c.includes('chapa'));
+        const idxTelefone = cabecalho.findIndex((c) => c.includes('tel') || c.includes('fone') || c.includes('celular'));
+
+        if (idxNome === -1 || idxCargo === -1) {
+          setErroImportacao('Cabeçalho inválido. Certifique-se de ter as colunas: "Nome", "Função" e "Unidade".');
+          return;
+        }
+
+        const registros: RegistroImportado[] = [];
+        for (let i = 1; i < linhas.length; i++) {
+          const cols = linhas[i].split(separador).map((col) => col.trim().replace(/^["']|["']$/g, ''));
+          const nome = cols[idxNome] || '';
+          const cargo = cols[idxCargo] || '';
+          if (!nome || !cargo) continue;
+
+          let unidade: 'ribas' | 'agua_clara' = 'ribas';
+          if (idxUnidade !== -1 && cols[idxUnidade]) {
+            const valUnidade = cols[idxUnidade].toLowerCase();
+            if (valUnidade.includes('agua') || valUnidade.includes('água') || valUnidade.includes('clara')) {
+              unidade = 'agua_clara';
+            }
+          }
+
+          registros.push({
+            nome,
+            cargo,
+            unidade,
+            matricula: idxMatricula !== -1 ? cols[idxMatricula] : undefined,
+            telefone: idxTelefone !== -1 ? cols[idxTelefone] : undefined,
+          });
+        }
 
         if (registros.length === 0) {
-          setErroImportacao('Nenhum colaborador válido foi encontrado no arquivo.');
-          setRegistrosPrevia([]);
+          setErroImportacao('Nenhum colaborador válido foi detectado nas linhas da planilha.');
           return;
         }
 
         setRegistrosPrevia(registros);
       } catch (err: any) {
-        setErroImportacao(err.message || 'Erro ao ler o arquivo. Certifique-se de que é um CSV ou Excel exportado legível.');
-        setRegistrosPrevia([]);
+        setErroImportacao('Erro ao processar o arquivo. Utilize formato .csv ou .txt delimitado por vírgula ou ponto-e-vírgula.');
       }
     };
 
-    reader.onerror = () => {
-      setErroImportacao('Falha na leitura física do arquivo.');
-    };
-
-    reader.readAsText(file, 'UTF-8');
+    reader.readAsText(file);
   };
 
   const handleConfirmarImportacao = () => {
     if (registrosPrevia.length === 0) return;
 
-    const novosColaboradores: ColaboradorCompleto[] = registrosPrevia.map((reg, idx) => ({
-      id: `import-${Date.now()}-${idx}`,
+    const novosColaboradores: ColaboradorCompleto[] = registrosPrevia.map((reg, index) => ({
+      id: `imp-${Date.now()}-${index}`,
       nome: reg.nome,
       cargo: reg.cargo,
-      matricula: reg.matricula || `MAT-${Math.floor(1000 + Math.random() * 9000)}`,
+      matricula: reg.matricula || `MAT-${1000 + index}`,
+      foto: '',
       telefone: reg.telefone || '(67) 99999-0000',
-      foto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
       status: 'presente',
       equipeId: 'reserva',
       equipeNumero: 1,
@@ -379,10 +355,7 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
     }));
 
     setColaboradoresAdicionados((prev) => [...novosColaboradores, ...prev]);
-
-    if (onImportarColaboradores) {
-      onImportarColaboradores(novosColaboradores);
-    }
+    onImportarColaboradores?.(novosColaboradores);
 
     setSucessoMsg(`${novosColaboradores.length} colaboradores importados com sucesso!`);
     setTimeout(() => {
@@ -393,586 +366,371 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
     }, 1200);
   };
 
-  const handleBaixarModeloPlanilha = () => {
-    const cabecalho = 'Nome;Função;Unidade;Matrícula;Telefone\r\n';
-    const linhasExemplo = [
-      'Carlos Eduardo Ferreira;Operador de Máquinas;Ribas do Rio Pardo;MAT-1088;(67) 99876-1122',
-      'Mariana Ribeiro Silveira;Técnica de Segurança;Água Clara;MAT-1089;(67) 99876-3344',
-      'Lucas Andrade Ramos;Motorista Florestal;Ribas do Rio Pardo;MAT-1090;(67) 99876-5566',
-      'Roberto Fonseca Dias;Ajudante de Campo;Água Clara;MAT-1091;(67) 99876-7788',
-    ].join('\r\n');
+  const baixarModeloCsv = () => {
+    const csvContent =
+      'Nome;Funcao;Unidade;Matricula;Telefone\n' +
+      'João da Silva;Operador de Motosserra;Ribas do Rio Pardo;MAT-101;(67) 99123-4567\n' +
+      'Marcos Paulo;Mecânico Florestal;Água Clara;MAT-102;(67) 99234-5678\n' +
+      'Ana Pereira;Técnica de Segurança;Ribas do Rio Pardo;MAT-103;(67) 99345-6789\n';
 
-    const csvCompleto = '\uFEFF' + cabecalho + linhasExemplo;
-    const blob = new Blob([csvCompleto], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'modelo_importacao_colaboradores.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'modelo_importacao_colaboradores.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   return (
-    <div className="w-full space-y-5 animate-in fade-in duration-300">
-      {/* Barra de Ações: Busca, Filtros e Botões Principais */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-card/70 backdrop-blur-md p-4 rounded-2xl border border-border/80 shadow-md">
-        {/* Campo de Busca */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, função, matrícula, placa ou veículo..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 bg-background/60 border-border/70 focus-visible:ring-emerald-500/30"
-          />
+    <div className="space-y-6">
+      {/* Topo com Estatísticas e Botões de Ação */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="outline" className="text-xs py-1 px-3 bg-card border-border/80">
+            Total: <span className="font-bold ml-1 tabular-nums">{stats.total}</span>
+          </Badge>
+          <Badge variant="outline" className="text-xs py-1 px-3 bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+            Presentes: <span className="font-bold ml-1 tabular-nums">{stats.presentes}</span>
+          </Badge>
+          <Badge variant="outline" className="text-xs py-1 px-3 bg-rose-500/10 text-rose-400 border-rose-500/30">
+            Faltas: <span className="font-bold ml-1 tabular-nums">{stats.faltas}</span>
+          </Badge>
+          <Badge variant="outline" className="text-xs py-1 px-3 bg-amber-500/10 text-amber-400 border-amber-500/30">
+            Substitutos: <span className="font-bold ml-1 tabular-nums">{stats.substitutos}</span>
+          </Badge>
         </div>
 
-        {/* Filtros de Status e Unidade */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Filtro Regional */}
-          <div className="flex items-center rounded-xl bg-background/50 border border-border/70 p-1">
-            <button
-              type="button"
-              onClick={() => setFilterRegional('todas')}
-              className={cn(
-                'px-2.5 py-1 text-xs font-semibold rounded-lg transition-all',
-                filterRegional === 'todas'
-                  ? 'bg-emerald-500 text-white shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Todas
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterRegional('ribas')}
-              className={cn(
-                'px-2.5 py-1 text-xs font-semibold rounded-lg transition-all',
-                filterRegional === 'ribas'
-                  ? 'bg-emerald-500 text-white shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Ribas
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterRegional('agua_clara')}
-              className={cn(
-                'px-2.5 py-1 text-xs font-semibold rounded-lg transition-all',
-                filterRegional === 'agua_clara'
-                  ? 'bg-emerald-500 text-white shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Água Clara
-            </button>
-          </div>
-
-          {/* Filtro de Presença */}
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
-            className="bg-background/80 border border-border/70 text-foreground text-xs font-semibold rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-500/30"
-          >
-            <option value="todos">Todos os Status</option>
-            <option value="presente">Presentes</option>
-            <option value="falta">Com Falta</option>
-            <option value="substituto">Substitutos</option>
-          </select>
-
-          {/* Botão Subir Planilha Excel / CSV */}
+        <div className="flex items-center gap-2">
           <Button
             type="button"
             variant="outline"
             onClick={() => setModalImportAberto(true)}
-            className="border-emerald-500/40 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/60 font-semibold text-xs gap-1.5 rounded-xl shadow-sm transition-all"
+            className="gap-2 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-            <span>Subir Excel / CSV</span>
+            <UploadCloud className="w-4 h-4" />
+            <span>Importar Planilha (Excel/CSV)</span>
           </Button>
 
-          {/* Botão Adicionar Colaborador Manual */}
           <Button
             type="button"
             onClick={() => setModalNovoColaboradorAberto(true)}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs gap-1.5 rounded-xl shadow-md transition-all"
+            className="gap-2 text-xs bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Adicionar Colaborador</span>
+            <span>Novo Colaborador</span>
           </Button>
         </div>
       </div>
 
-      {/* Cards de Resumo */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md shadow-sm">
-          <p className="text-xs text-muted-foreground font-medium">Total Listados</p>
-          <p className="text-2xl font-black text-foreground mt-0.5">{stats.total}</p>
+      {/* Barra de Filtros */}
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, cargo, matrícula ou veículo..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 bg-card/70 border-border/70"
+          />
         </div>
-        <div className="p-3.5 rounded-2xl border border-emerald-500/25 bg-emerald-500/5 shadow-sm">
-          <p className="text-xs text-emerald-400 font-medium">Presentes</p>
-          <p className="text-2xl font-black text-emerald-400 mt-0.5">{stats.presentes}</p>
-        </div>
-        <div className="p-3.5 rounded-2xl border border-rose-500/25 bg-rose-500/5 shadow-sm">
-          <p className="text-xs text-rose-400 font-medium">Faltas</p>
-          <p className="text-2xl font-black text-rose-400 mt-0.5">{stats.faltas}</p>
-        </div>
-        <div className="p-3.5 rounded-2xl border border-amber-500/25 bg-amber-500/5 shadow-sm">
-          <p className="text-xs text-amber-400 font-medium">Substitutos</p>
-          <p className="text-2xl font-black text-amber-400 mt-0.5">{stats.substitutos}</p>
+
+        <div className="flex gap-2">
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as any)}
+            className="px-3 py-2 rounded-xl border border-border/80 bg-card/70 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="todos">Todos os Status</option>
+            <option value="presente">Presentes</option>
+            <option value="falta">Faltas</option>
+            <option value="substituto">Substitutos</option>
+          </select>
+
+          <select
+            value={filterRegional}
+            onChange={(e) => setFilterRegional(e.target.value as any)}
+            className="px-3 py-2 rounded-xl border border-border/80 bg-card/70 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="todas">Todas Unidades</option>
+            <option value="ribas">Ribas do Rio Pardo</option>
+            <option value="agua_clara">Água Clara</option>
+          </select>
         </div>
       </div>
 
       {/* Grid de Cards de Colaboradores */}
-      {colaboradoresFiltrados.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl border border-dashed border-border/80 bg-card/40">
-          <Users className="w-10 h-10 text-muted-foreground/60 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-foreground">Nenhum colaborador encontrado</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Tente ajustar os filtros ou suba uma planilha com novos colaboradores.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {colaboradoresFiltrados.map((c) => {
-            const isExpanded = expandedId === c.id;
-            return (
-              <Card
-                key={c.id}
-                className={cn(
-                  'border border-border/70 bg-card/75 hover:border-emerald-500/40 hover:shadow-lg transition-all duration-200 overflow-hidden',
-                  c.status === 'falta' && 'border-rose-500/30 ring-1 ring-rose-500/15',
-                  c.status === 'substituto' && 'border-amber-500/30 ring-1 ring-amber-500/15'
-                )}
-              >
-                <div className="p-4 flex flex-col gap-3">
-                  {/* Topo do Card: Foto, Nome e Status */}
-                  <div className="flex items-start gap-3">
-                    <img
-                      src={c.foto}
-                      alt={c.nome}
-                      className="w-12 h-12 rounded-xl object-cover border border-border/80 shrink-0 bg-muted"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
-                      }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1.5">
-                        <h4 className="font-bold text-sm text-foreground truncate">{c.nome}</h4>
-                        <Badge
-                          variant="outline"
-                          className={cn('text-[10px] px-2 py-0.5 shrink-0 capitalize', statusConfig[c.status].className)}
-                        >
-                          {statusConfig[c.status].label}
-                        </Badge>
-                      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {colaboradoresFiltrados.map((c) => {
+          const cfg = statusConfig[c.status] || statusConfig.presente;
+          const isExpanded = expandedId === c.id;
+
+          return (
+            <Card
+              key={c.id}
+              className="border-border/70 hover:border-border transition-all duration-200 overflow-hidden"
+            >
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-muted border border-border/80 flex items-center justify-center overflow-hidden shrink-0">
+                      {c.foto ? (
+                        <img src={c.foto} alt={c.nome} className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground leading-snug">{c.nome}</h4>
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                        <Briefcase className="w-3 h-3 text-emerald-400" />
-                        <span className="truncate">{c.cargo}</span>
+                        <Briefcase className="w-3 h-3 text-muted-foreground/70" />
+                        {c.cargo}
                       </p>
-                      <div className="flex items-center gap-2 mt-1 text-[11px] text-muted-foreground font-mono">
-                        <span className="bg-muted/60 px-1.5 py-0.5 rounded border border-border/40">
-                          {c.matricula}
-                        </span>
-                        <span className="flex items-center gap-1 text-emerald-400 font-sans">
-                          <MapPin className="w-3 h-3" />
-                          {regionalLabel[c.regional] || c.regional}
-                        </span>
-                      </div>
                     </div>
                   </div>
-
-                  {/* Detalhes Veículo / Alocação */}
-                  <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-foreground/90">{c.veiculoPrefixo}</span>
-                      {c.veiculoPlaca !== '-' && (
-                        <span className="font-mono text-[10px] bg-muted px-1 rounded">
-                          {c.veiculoPlaca}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setExpandedId(isExpanded ? null : c.id)}
-                      className="flex items-center gap-0.5 text-emerald-400 hover:text-emerald-300 font-medium text-[11px]"
-                    >
-                      {isExpanded ? 'Menos' : 'Detalhes'}
-                      {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                    </button>
-                  </div>
-
-                  {/* Informações Expandidas */}
-                  {isExpanded && (
-                    <div className="pt-2 border-t border-border/40 space-y-1.5 text-xs text-muted-foreground animate-in fade-in duration-150">
-                      <div className="flex items-center justify-between">
-                        <span>Telefone:</span>
-                        <span className="text-foreground font-medium flex items-center gap-1">
-                          <Phone className="w-3 h-3 text-emerald-400" /> {c.telefone}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Equipe / Posição:</span>
-                        <span className="text-foreground font-medium">
-                          Eq. {c.equipeNumero} ({c.posicaoVeiculo})
-                        </span>
-                      </div>
-                      {c.motivoFalta && (
-                        <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[11px]">
-                          <strong>Motivo da Falta:</strong> {c.motivoFalta}
-                        </div>
-                      )}
-                      {c.substitutoNome && (
-                        <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px]">
-                          <strong>Substituto:</strong> {c.substitutoNome}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <Badge variant="outline" className={cn('text-[10px] px-2 py-0.5 border', cfg.className)}>
+                    {cfg.label}
+                  </Badge>
                 </div>
-              </Card>
-            );
-          })}
+
+                <div className="pt-2 border-t border-border/50 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-muted-foreground/70" />
+                    <span>{regionalLabel[c.regional] || c.regional}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-muted-foreground/70" />
+                    <span>{c.telefone || 'Sem telefone'}</span>
+                  </div>
+                </div>
+
+                {/* Ações Rápidas de Presença */}
+                <div className="pt-2 border-t border-border/50 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-muted-foreground">Veículo: {c.veiculoPrefixo}</span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={c.status === 'presente' ? 'default' : 'outline'}
+                      onClick={() => onUpdateColaboradorStatus?.(c.id, 'presente')}
+                      className="h-7 px-2 text-[11px]"
+                    >
+                      <UserCheck className="w-3.5 h-3.5 mr-1 text-emerald-400" />
+                      Presente
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={c.status === 'falta' ? 'destructive' : 'outline'}
+                      onClick={() => onUpdateColaboradorStatus?.(c.id, 'falta', 'Falta Injustificada')}
+                      className="h-7 px-2 text-[11px]"
+                    >
+                      <UserX className="w-3.5 h-3.5 mr-1" />
+                      Falta
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {colaboradoresFiltrados.length === 0 && (
+        <div className="text-center py-12 rounded-2xl border border-dashed border-border/80 bg-card/40">
+          <Users className="w-10 h-10 mx-auto text-muted-foreground/60 mb-2" />
+          <h3 className="text-sm font-bold text-foreground">Nenhum colaborador encontrado</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Tente ajustar os termos de pesquisa ou filtros selecionados.
+          </p>
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL: SUBIR PLANILHA EXCEL / CSV                                         */}
-      {/* ========================================================================= */}
+      {/* Modal de Importação de Arquivo Excel / CSV */}
       {modalImportAberto && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in"
           onClick={() => setModalImportAberto(false)}
         >
           <div
-            className="relative w-full max-w-2xl bg-card border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            className="relative w-full max-w-xl bg-card border border-border rounded-2xl shadow-2xl p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header do Modal */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                  <FileSpreadsheet className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-foreground">Subir Planilha com Colaboradores</h3>
-                  <p className="text-xs text-muted-foreground">Importe em lote colunas: Nome, Função e Unidade</p>
-                </div>
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <div className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-base font-bold text-foreground">Importar Colaboradores via Planilha</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setModalImportAberto(false)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Conteúdo do Modal */}
-            <div className="p-6 overflow-y-auto space-y-4">
-              {/* Instruções e Botão de Modelo */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-                <div className="text-xs text-emerald-300/90 leading-relaxed">
-                  <p className="font-semibold text-emerald-200">Colunas recomendadas no arquivo (.csv ou .xlsx exportado):</p>
-                  <p className="mt-0.5"><strong>Nome</strong> | <strong>Função</strong> (ou Cargo) | <strong>Unidade</strong> (Ribas ou Água Clara)</p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBaixarModeloPlanilha}
-                  className="shrink-0 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 text-xs gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Baixar Modelo
-                </Button>
-              </div>
+            <p className="text-xs text-muted-foreground">
+              Envie um arquivo <strong>.CSV</strong> contendo as colunas:{' '}
+              <span className="text-foreground font-semibold">Nome, Função (Cargo) e Unidade (Ribas do Rio Pardo ou Água Clara)</span>.
+            </p>
 
-              {/* Zona de Drop / Seleção de Arquivo */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-border/80 hover:border-emerald-500/50 rounded-xl p-6 text-center cursor-pointer transition-colors bg-muted/20"
+            >
+              <UploadCloud className="w-8 h-8 mx-auto text-emerald-400 mb-2" />
+              <p className="text-sm font-semibold text-foreground">
+                {arquivoNome ? arquivoNome : 'Clique para selecionar a planilha'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Formatos aceitos: CSV delimitado por vírgula ou ponto-e-vírgula</p>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".csv, .txt, .xlsx, .xls"
-                onChange={handleArquivoExcelSelecionado}
+                accept=".csv,text/csv,text/plain"
+                onChange={handleArquivoSelecionado}
                 className="hidden"
               />
+            </div>
 
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className={cn(
-                  'border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all',
-                  'hover:border-emerald-500/60 hover:bg-emerald-500/5',
-                  arquivoNome ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border/80 bg-muted/10'
-                )}
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={baixarModeloCsv}
+                className="text-xs text-emerald-400 hover:underline flex items-center gap-1.5"
               >
-                <UploadCloud className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-foreground">
-                  {arquivoNome ? arquivoNome : 'Clique para selecionar o arquivo Excel (.csv ou exportado)'}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Formatos suportados: CSV, XLSX salvo como CSV ou valores separados por vírgula / ponto-e-vírgula
-                </p>
-              </div>
+                <Download className="w-3.5 h-3.5" />
+                Baixar Planilha Modelo (.csv)
+              </button>
 
-              {/* Mensagem de Erro */}
-              {erroImportacao && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{erroImportacao}</span>
-                </div>
-              )}
-
-              {/* Mensagem de Sucesso */}
-              {sucessoMsg && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>{sucessoMsg}</span>
-                </div>
-              )}
-
-              {/* Tabela de Prévia dos Colaboradores */}
               {registrosPrevia.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                      <FileCheck className="w-4 h-4 text-emerald-400" />
-                      Pré-visualização ({registrosPrevia.length} colaboradores identificados)
-                    </span>
-                    <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400">
-                      Pronto para importar
-                    </Badge>
-                  </div>
-
-                  <div className="max-h-48 overflow-y-auto rounded-xl border border-border/80 bg-muted/20">
-                    <table className="w-full text-xs text-left">
-                      <thead className="bg-muted/40 text-muted-foreground sticky top-0 border-b border-border/50">
-                        <tr>
-                          <th className="px-3 py-2 font-semibold">Nome</th>
-                          <th className="px-3 py-2 font-semibold">Função</th>
-                          <th className="px-3 py-2 font-semibold">Unidade</th>
-                          <th className="px-3 py-2 font-semibold">Matrícula</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/30">
-                        {registrosPrevia.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-muted/30">
-                            <td className="px-3 py-2 font-semibold text-foreground">{item.nome}</td>
-                            <td className="px-3 py-2 text-muted-foreground">{item.cargo}</td>
-                            <td className="px-3 py-2">
-                              <span
-                                className={cn(
-                                  'px-2 py-0.5 rounded-full text-[10px] font-semibold border',
-                                  item.unidade === 'ribas'
-                                    ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
-                                    : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                                )}
-                              >
-                                {regionalLabel[item.unidade]}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 font-mono text-[10px] text-muted-foreground">
-                              {item.matricula || '-'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                <span className="text-xs text-foreground font-semibold">
+                  {registrosPrevia.length} colaborador(es) identificados
+                </span>
               )}
             </div>
 
-            {/* Rodapé do Modal */}
-            <div className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-border bg-muted/20">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setModalImportAberto(false)}
-                className="text-xs"
-              >
+            {erroImportacao && (
+              <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{erroImportacao}</span>
+              </div>
+            )}
+
+            {sucessoMsg && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{sucessoMsg}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60">
+              <Button type="button" variant="outline" onClick={() => setModalImportAberto(false)}>
                 Cancelar
               </Button>
               <Button
                 type="button"
-                disabled={registrosPrevia.length === 0}
                 onClick={handleConfirmarImportacao}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs gap-1.5 font-bold"
+                disabled={registrosPrevia.length === 0}
+                className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
               >
-                <CheckCircle2 className="w-4 h-4" />
-                Importar {registrosPrevia.length > 0 ? `(${registrosPrevia.length})` : ''}
+                <FileCheck className="w-4 h-4" />
+                Confirmar Importação ({registrosPrevia.length})
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL: CADASTRO MANUAL DE NOVO COLABORADOR COM UPLOAD DE FOTO             */}
-      {/* ========================================================================= */}
+      {/* Modal de Criação Manual de Colaborador */}
       {modalNovoColaboradorAberto && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in"
           onClick={() => setModalNovoColaboradorAberto(false)}
         >
           <div
-            className="relative w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            className="relative w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-foreground">Novo Colaborador</h3>
-                  <p className="text-xs text-muted-foreground">Cadastre dados e foto de identificação</p>
-                </div>
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                <h3 className="text-base font-bold text-foreground">Novo Colaborador</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setModalNovoColaboradorAberto(false)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSalvarNovoColaborador} className="p-6 overflow-y-auto space-y-4">
-              {formErro && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
-                  {formErro}
-                </div>
-              )}
-
-              {/* Upload de Foto */}
+            <form onSubmit={handleCriarColaborador} className="space-y-3">
               <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-2">
-                  Foto do Colaborador
-                </label>
-                <input
-                  ref={fotoInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFotoUpload}
-                  className="hidden"
-                />
-                <div className="flex items-center gap-4">
-                  <div className="relative w-20 h-20 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-muted/30 shrink-0">
-                    {novaFoto ? (
-                      <img src={novaFoto} alt="Prévia" className="w-full h-full object-cover" />
-                    ) : (
-                      <Camera className="w-7 h-7 text-muted-foreground/60" />
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fotoInputRef.current?.click()}
-                      className="text-xs gap-1.5 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
-                    >
-                      <Camera className="w-3.5 h-3.5" />
-                      {novaFoto ? 'Alterar Foto' : 'Subir Foto'}
-                    </Button>
-                    {novaFoto && (
-                      <button
-                        type="button"
-                        onClick={handleRemoverFoto}
-                        className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 self-start"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Remover
-                      </button>
-                    )}
-                    <span className="text-[11px] text-muted-foreground">PNG, JPG ou WEBP até 5MB</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Nome */}
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                  Nome Completo *
-                </label>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">Nome Completo</label>
                 <Input
-                  placeholder="Ex: Carlos Eduardo de Oliveira"
+                  placeholder="Ex: João da Silva Santos"
                   value={novoNome}
                   onChange={(e) => setNovoNome(e.target.value)}
                   required
                 />
               </div>
 
-              {/* Cargo e Matrícula */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                    Função / Cargo *
-                  </label>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Função / Cargo</label>
                   <Input
-                    placeholder="Ex: Operador de Máquinas"
+                    placeholder="Ex: Operador Florestal"
                     value={novoCargo}
                     onChange={(e) => setNovoCargo(e.target.value)}
                     required
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                    Matrícula
-                  </label>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Matrícula</label>
                   <Input
-                    placeholder="Ex: MAT-1090"
+                    placeholder="Ex: MAT-1082"
                     value={novaMatricula}
                     onChange={(e) => setNovaMatricula(e.target.value)}
                   />
                 </div>
               </div>
 
-              {/* Telefone e Unidade */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                    Telefone
-                  </label>
-                  <Input
-                    placeholder="(67) 99999-0000"
-                    value={novoTelefone}
-                    onChange={(e) => setNovoTelefone(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                    Unidade Operacional
-                  </label>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Unidade</label>
                   <select
                     value={novaUnidade}
                     onChange={(e) => setNovaUnidade(e.target.value as any)}
-                    className="w-full h-10 bg-background/80 border border-border/80 text-foreground text-xs font-semibold rounded-xl px-3 outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    className="w-full h-10 px-3 rounded-xl border border-border bg-card text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="ribas">Ribas do Rio Pardo</option>
                     <option value="agua_clara">Água Clara</option>
                   </select>
                 </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Telefone</label>
+                  <Input
+                    placeholder="Ex: (67) 99876-5432"
+                    value={novoTelefone}
+                    onChange={(e) => setNovoTelefone(e.target.value)}
+                  />
+                </div>
               </div>
 
-              {/* Botões */}
-              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setModalNovoColaboradorAberto(false)}
-                  className="text-xs"
-                >
+              {formErro && (
+                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs">
+                  {formErro}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60">
+                <Button type="button" variant="outline" onClick={() => setModalNovoColaboradorAberto(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1.5">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Salvar Colaborador
-                </Button>
+                <Button type="submit">Cadastrar Colaborador</Button>
               </div>
             </form>
           </div>
