@@ -73,15 +73,15 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
     {
       key: 'ribas' as const,
       label: 'Ribas',
-      activeColor: 'bg-sky-500 text-white border-sky-400/50',
-      dot: 'bg-sky-400',
+      activeColor: 'bg-emerald-600 text-white border-emerald-500/50',
+      dot: 'bg-emerald-400',
       count: veiculosSeguros.filter((v) => v?.regional === 'ribas').length,
     },
     {
       key: 'agua_clara' as const,
       label: 'Água Clara',
-      activeColor: 'bg-emerald-500 text-white border-emerald-400/50',
-      dot: 'bg-emerald-400',
+      activeColor: 'bg-teal-600 text-white border-teal-500/50',
+      dot: 'bg-teal-400',
       count: veiculosSeguros.filter((v) => v?.regional === 'agua_clara').length,
     },
   ];
@@ -92,12 +92,12 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
       dot: 'bg-primary',
     },
     ribas: {
-      badge: 'bg-sky-500/10 border-sky-500/25 text-sky-400',
-      dot: 'bg-sky-400',
-    },
-    agua_clara: {
       badge: 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400',
       dot: 'bg-emerald-400',
+    },
+    agua_clara: {
+      badge: 'bg-teal-500/10 border-teal-500/25 text-teal-400',
+      dot: 'bg-teal-400',
     },
   };
 
@@ -108,30 +108,29 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
     {
       key: '2',
       label: 'Duplas',
-      descricao: '2 pessoas',
+      descricao: '2 operadores',
       total: equipesCom2,
-      icon: <Users className="w-5 h-5 text-sky-400" />,
-      numColor: 'text-sky-300',
-      iconBg: 'bg-sky-500/15 border-sky-500/30',
-      borderColor: 'border-sky-500/25',
-      gradientBg: 'from-sky-500/8 to-transparent',
-    },
-    {
-      key: '3',
-      label: 'Trios',
-      descricao: '3 pessoas',
-      total: equipesCom3,
-      icon: <UsersRound className="w-5 h-5 text-emerald-400" />,
+      icon: <Users className="w-5 h-5 text-emerald-400" />,
       numColor: 'text-emerald-300',
       iconBg: 'bg-emerald-500/15 border-emerald-500/30',
       borderColor: 'border-emerald-500/25',
       gradientBg: 'from-emerald-500/8 to-transparent',
     },
+    {
+      key: '3',
+      label: 'Trios',
+      descricao: '3 operadores',
+      total: equipesCom3,
+      icon: <UsersRound className="w-5 h-5 text-teal-400" />,
+      numColor: 'text-teal-300',
+      iconBg: 'bg-teal-500/15 border-teal-500/30',
+      borderColor: 'border-teal-500/25',
+      gradientBg: 'from-teal-500/8 to-transparent',
+    },
   ];
 
   return (
     <div className="w-full space-y-3">
-      {/* Quadro de Composição de Equipes */}
       <div className="w-full rounded-2xl border border-border/50 bg-card/70 backdrop-blur-md shadow-xl overflow-hidden">
         <div className="px-5 pt-4 pb-3 border-b border-border/40 bg-gradient-to-r from-muted/30 to-muted/10 space-y-3">
           <div className="flex items-center gap-2.5 flex-wrap">
@@ -146,7 +145,7 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
               <span className={cn('w-1.5 h-1.5 rounded-full', colors.dot)} />
               <span>{activePanelInfo?.label ?? 'Geral'}</span>
               <span className="opacity-60">·</span>
-              <span>{totalEquipes} equipes</span>
+              <span className="tabular-nums">{totalEquipes} equipes</span>
             </div>
           </div>
 
@@ -166,7 +165,7 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
                 <span className={cn('w-1.5 h-1.5 rounded-full', btn.dot)} />
                 {btn.label}
                 <span className={cn(
-                  'ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold',
+                  'ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums',
                   activePanel === btn.key ? 'bg-white/20' : 'bg-muted text-muted-foreground'
                 )}>
                   {btn.count}
@@ -192,7 +191,7 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
                     {card.icon}
                   </div>
                   <div className="text-right">
-                    <p className={cn('text-3xl font-extrabold leading-none', card.numColor)}>{card.total}</p>
+                    <p className={cn('text-3xl font-extrabold leading-none tabular-nums', card.numColor)}>{card.total}</p>
                     <p className="text-[10px] text-muted-foreground mt-1">equipes</p>
                   </div>
                 </div>
@@ -206,7 +205,6 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
         </div>
       </div>
 
-      {/* Botão NOVA EQUIPE abaixo de Composição de Equipes */}
       {onNovaEquipe && (
         <div className="flex items-center justify-end">
           <Button
@@ -215,7 +213,7 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
             className="w-full sm:w-auto px-5 py-2.5 h-auto text-sm font-bold gap-2 shadow-lg hover:shadow-primary/20 transition-all rounded-xl cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            Nova Equipe
+            <span>Adicionar nova equipe</span>
           </Button>
         </div>
       )}

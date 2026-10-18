@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Component, ErrorInfo, ReactNode } from 'react';
 import { Navbar } from './components/Navbar';
 import { MetricsHeader } from './components/MetricsHeader';
 import { VehicleCardGrid } from './components/VehicleCardGrid';
@@ -7,55 +7,163 @@ import { TeamsManagement } from './components/TeamsManagement';
 import { ExportReports } from './components/ExportReports';
 import { NewTeamModal } from './components/NewTeamModal';
 import { VEICULOS_INICIAIS, COLABORADORES_RESERVA } from './data/mockData';
-import { Veiculo, Colaborador, Regional, StatusPresenca, MotivoFalta, MetricasGerais } from './types';
+import { Regional, StatusPresenca, MotivoFalta, Veiculo, Colaborador } from './types';
+import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { Button } from './components/ui/button';
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class AppErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('AppErrorBoundary capturou erro:', error, errorInfo);
+  }
+
+  handleReset = () => {
+    localStorage.removeItem('controle_faltas_veiculos');
+    localStorage.removeItem('controle_faltas_reservas');
+    window.location.reload();
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-destructive/15 border border-destructive/30 flex items-center justify-center mb-4 text-destructive">
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+          <h1 className="text-xl font-bold text-foreground mb-2">Recuperação de Inicialização</h1>
+          <p className="text-sm text-muted-foreground max-w-md mb-6">
+            O aplicativo detectou uma inconsistência transitória nos dados em cache. Clique abaixo para restaurar o estado operacional.
+          </p>
+          <Button onClick={this.handleReset} className="gap-2 font-semibold">
+            <RotateCcw className="w-4 h-4" />
+            Restaurar Painel Operacional
+          </Button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'veiculos' | 'colaboradores' | 'equipes' | 'relatorios'>('veiculos');
   const [selectedRegional, setSelectedRegional] = useState<Regional>('todas');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [veiculos, setVeiculos] = useState<Veiculo[]>(VEICULOS_INICIAIS);
-  const [colaboradoresReserva, setColaboradoresReserva] = useState<Colaborador[]>(COLABORADORES_RESERVA);
-  const [isNewTeamModalOpen, setIsNewTeamModalOpen] = useState(false);
+  const [modalNovaEquipeAberto, setModalNovaEquipeAberto] = useState(false);
 
-  // Manipulador de atualização de presença
-  const handleUpdateStatus = (
+  // Inicialização segura de veículos
+  const [veiculos, setVeiculos] = useState<Veiculo[]>(() => {
+    try {
+      const salvo = localStorage.getItem('controle_faltas_veiculos');
+      if (salvo) {
+        const parsed = JSON.parse(salvo);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.assentos) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao restaurar veículos de localStorage, usando padrão:', e);
+    }
+    return VEICULOS_INICIAIS;
+  });
+
+  // Inicialização segura de colaboradores reserva
+  const [colaboradoresReserva, setColaboradoresReserva] = useState<Colaborador[]>(() => {
+    try {
+      const salvo = localStorage.getItem('controle_faltas_reservas');
+      if (salvo) {
+        const parsed = JSON.parse(salvo);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao restaurar reservas de localStorage, usando padrão:', e);
+    }
+    return COLABORADORES_RESERVA;
+  });
+
+  // Persistência com verificação de integridade
+  useEffect(() => {
+    try {
+      if (veiculos && veiculos.length > 0) {
+        localStorage.setItem('controle_faltas_veiculos', JSON.stringify(veiculos));
+      }
+    } catch (e) {
+      console.warn('Falha ao persistir veiculos:', e);
+    }
+  }, [veiculos]);
+
+  useEffect(() => {
+    try {
+      if (colaboradoresReserva && colaboradoresReserva.length > 0) {
+        localStorage.setItem('controle_faltas_reservas', JSON.stringify(colaboradoresReserva));
+      }
+    } catch (e) {
+      console.warn('Falha ao persistir reservas:', e);
+    }
+  }, [colaboradoresReserva]);
+
+  // Handler de alteração de presença nos assentos
+  const handleStatusChange = (
     veiculoId: string,
-    colaboradorId: string,
+    posicao: 'motorista' | 'frenteDir' | 'trasEsq' | 'trasDir',
     novoStatus: StatusPresenca,
     motivoFalta?: MotivoFalta,
-    substituto?: Colaborador
+    observacao?: string,
+    substitutoId?: string
   ) => {
     setVeiculos((prevVeiculos) =>
-      prevVeiculos.map((v) => {
-        if (v.id !== veiculoId) return v;
+      (prevVeiculos || []).map((v) => {
+        if (!v || v.id !== veiculoId || !v.assentos) return v;
 
-        const atualizarAssento = (c: Colaborador) => {
-          if (c.id !== colaboradorId) return c;
-          return {
-            ...c,
-            status: novoStatus,
-            motivoFalta: novoStatus === 'falta' ? motivoFalta : undefined,
-            substitutoId: novoStatus === 'substituto' || novoStatus === 'falta' ? substituto?.id : undefined,
-            substitutoNome: novoStatus === 'substituto' || novoStatus === 'falta' ? substituto?.nome : undefined,
-          };
-        };
+        let substitutoNome: string | undefined = undefined;
+        if (substitutoId) {
+          const sub = (colaboradoresReserva || []).find((r) => r?.id === substitutoId);
+          if (sub) substitutoNome = sub.nome;
+        }
+
+        const assentoAtual = v.assentos[posicao];
+        if (!assentoAtual) return v;
 
         return {
           ...v,
           assentos: {
-            motorista: atualizarAssento(v.assentos.motorista),
-            frenteDir: atualizarAssento(v.assentos.frenteDir),
-            trasEsq: atualizarAssento(v.assentos.trasEsq),
-            trasDir: atualizarAssento(v.assentos.trasDir),
+            ...v.assentos,
+            [posicao]: {
+              ...assentoAtual,
+              status: novoStatus,
+              motivoFalta: novoStatus === 'falta' ? motivoFalta : undefined,
+              observacao: novoStatus === 'falta' ? observacao : undefined,
+              substitutoId: novoStatus === 'falta' && substitutoId ? substitutoId : undefined,
+              substitutoNome: novoStatus === 'falta' ? substitutoNome : undefined,
+            },
           },
         };
       })
     );
   };
 
-  // Integração de colaboradores importados via Excel / CSV para o banco reserva
   const handleImportarColaboradores = (novos: ColaboradorCompleto[]) => {
-    const convertidos: Colaborador[] = novos.map((n) => ({
+    if (!Array.isArray(novos) || novos.length === 0) return;
+    const novosFormatados: Colaborador[] = novos.map((n) => ({
       id: n.id,
       nome: n.nome,
       cargo: n.cargo,
@@ -67,11 +175,12 @@ export function App() {
       equipeNumero: 1,
       posicaoVeiculo: 'motorista',
     }));
-    setColaboradoresReserva((prev) => [...convertidos, ...prev]);
+    setColaboradoresReserva((prev) => [...(prev || []), ...novosFormatados]);
   };
 
   const handleAdicionarColaborador = (novo: ColaboradorCompleto) => {
-    const convert: Colaborador = {
+    if (!novo) return;
+    const novoFormatado: Colaborador = {
       id: novo.id,
       nome: novo.nome,
       cargo: novo.cargo,
@@ -83,205 +192,88 @@ export function App() {
       equipeNumero: 1,
       posicaoVeiculo: 'motorista',
     };
-    setColaboradoresReserva((prev) => [convert, ...prev]);
+    setColaboradoresReserva((prev) => [...(prev || []), novoFormatado]);
   };
 
-  // Salvar novo veículo criado
-  const handleSaveNewTeam = (data: {
-    prefixo: string;
-    placa: string;
-    modelo: string;
-    regional: 'ribas' | 'agua_clara';
-  }) => {
-    const num = veiculos.length + 105;
-    const novoVeiculo: Veiculo = {
-      id: `vtr-${num}`,
-      prefixo: data.prefixo,
-      placa: data.placa,
-      modelo: data.modelo,
-      ano: 2024,
-      regional: data.regional,
-      statusOperacional: 'ativo',
-      equipe1Codigo: `EQ-${num}A`,
-      equipe2Codigo: `EQ-${num}B`,
-      assentos: {
-        motorista: {
-          id: `col-${num}-1`,
-          nome: 'Motorista Designado',
-          cargo: 'Motorista Florestal',
-          matricula: `MAT-${num}1`,
-          foto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-          telefone: '(67) 99999-0001',
-          status: 'presente',
-          equipeId: `EQ-${num}A`,
-          equipeNumero: 1,
-          posicaoVeiculo: 'motorista',
-        },
-        frenteDir: {
-          id: `col-${num}-2`,
-          nome: 'Ajudante Designado',
-          cargo: 'Operador de Campo',
-          matricula: `MAT-${num}2`,
-          foto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-          telefone: '(67) 99999-0002',
-          status: 'presente',
-          equipeId: `EQ-${num}A`,
-          equipeNumero: 1,
-          posicaoVeiculo: 'frente_dir',
-        },
-        trasEsq: {
-          id: `col-${num}-3`,
-          nome: 'Técnico Designado',
-          cargo: 'Técnico Florestal',
-          matricula: `MAT-${num}3`,
-          foto: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
-          telefone: '(67) 99999-0003',
-          status: 'presente',
-          equipeId: `EQ-${num}B`,
-          equipeNumero: 2,
-          posicaoVeiculo: 'tras_esq',
-        },
-        trasDir: {
-          id: `col-${num}-4`,
-          nome: 'Operador Reserva',
-          cargo: 'Ajudante Geral',
-          matricula: `MAT-${num}4`,
-          foto: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
-          telefone: '(67) 99999-0004',
-          status: 'presente',
-          equipeId: `EQ-${num}B`,
-          equipeNumero: 2,
-          posicaoVeiculo: 'tras_dir',
-        },
-      },
-    };
-
-    setVeiculos((prev) => [novoVeiculo, ...prev]);
-  };
-
-  // Cálculo de Métricas Gerais
-  const metricas: MetricasGerais = useMemo(() => {
-    const totalVeiculos = veiculos.length;
-    const veiculosAtivos = veiculos.filter((v) => v.statusOperacional === 'ativo').length;
-    const totalEquipes = totalVeiculos * 2;
-
-    let totalColaboradores = 0;
-    let colaboradoresPresentes = 0;
-    let colaboradoresFaltas = 0;
-    let colaboradoresSubstitutos = 0;
-    let equipesCompletas = 0;
-    let equipesIncompletas = 0;
-
-    veiculos.forEach((v) => {
-      const eq1 = [v.assentos.motorista, v.assentos.frenteDir];
-      const eq2 = [v.assentos.trasEsq, v.assentos.trasDir];
-
-      const checkEq = (eq: Colaborador[]) => {
-        const temFalta = eq.some((c) => c.status === 'falta');
-        if (temFalta) equipesIncompletas++;
-        else equipesCompletas++;
-      };
-
-      checkEq(eq1);
-      checkEq(eq2);
-
-      [...eq1, ...eq2].forEach((c) => {
-        totalColaboradores++;
-        if (c.status === 'presente') colaboradoresPresentes++;
-        else if (c.status === 'falta') colaboradoresFaltas++;
-        else if (c.status === 'substituto') colaboradoresSubstitutos++;
-      });
-    });
-
-    const taxaPresenca =
-      totalColaboradores > 0
-        ? Math.round(((colaboradoresPresentes + colaboradoresSubstitutos) / totalColaboradores) * 100)
-        : 100;
-
-    return {
-      totalVeiculos,
-      veiculosAtivos,
-      totalEquipes,
-      equipesCompletas,
-      equipesIncompletas,
-      totalColaboradores,
-      colaboradoresPresentes,
-      colaboradoresFaltas,
-      colaboradoresSubstitutos,
-      taxaPresenca,
-    };
-  }, [veiculos]);
+  const veiculosFiltrados = useMemo(() => {
+    const lista = veiculos || [];
+    if (selectedRegional === 'todas') return lista;
+    return lista.filter((v) => v?.regional === selectedRegional);
+  }, [veiculos, selectedRegional]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col antialiased selection:bg-emerald-500/20 selection:text-emerald-300">
-      {/* Navbar com Logo Oficial, Seletor de Unidades e Data */}
-      <Navbar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        selectedRegional={selectedRegional}
-        onRegionalChange={setSelectedRegional}
-        selectedDate={selectedDate}
-        onDateChange={setSelectedDate}
-        onNovaEquipeClick={() => setIsNewTeamModalOpen(true)}
-      />
+    <AppErrorBoundary>
+      <div className="min-h-screen bg-background text-foreground flex flex-col antialiased selection:bg-emerald-500/20 selection:text-emerald-300">
+        <Navbar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          selectedRegional={selectedRegional}
+          onRegionalChange={setSelectedRegional}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          onNovaEquipeClick={() => setModalNovaEquipeAberto(true)}
+        />
 
-      {/* Conteúdo Principal */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Na aba Veículos, exibe o painel de composição de equipes */}
-        {activeTab === 'veiculos' && (
-          <MetricsHeader
-            veiculos={veiculos}
-            metricas={metricas}
-            selectedRegional={selectedRegional}
-            selectedDate={selectedDate}
-            onFiltroRegionalChange={(r) => setSelectedRegional(r)}
-            onNovaEquipe={() => setIsNewTeamModalOpen(true)}
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+          {activeTab === 'veiculos' && (
+            <div className="space-y-6">
+              <MetricsHeader
+                veiculos={veiculosFiltrados}
+                selectedRegional={selectedRegional}
+                selectedDate={selectedDate}
+                onFiltroRegionalChange={(reg) => setSelectedRegional(reg)}
+                onNovaEquipe={() => setModalNovaEquipeAberto(true)}
+              />
+              <VehicleCardGrid
+                veiculos={veiculosFiltrados}
+                colaboradoresReserva={colaboradoresReserva}
+                selectedRegional={selectedRegional}
+                onStatusChange={handleStatusChange}
+              />
+            </div>
+          )}
+
+          {activeTab === 'colaboradores' && (
+            <CollaboratorsManagement
+              veiculos={veiculos}
+              colaboradoresReserva={colaboradoresReserva}
+              onImportarColaboradores={handleImportarColaboradores}
+              onAdicionarColaborador={handleAdicionarColaborador}
+            />
+          )}
+
+          {activeTab === 'equipes' && (
+            <TeamsManagement
+              veiculos={veiculos}
+              selectedRegional={selectedRegional}
+              onNovaEquipe={() => setModalNovaEquipeAberto(true)}
+            />
+          )}
+
+          {activeTab === 'relatorios' && (
+            <ExportReports
+              veiculos={veiculos}
+              colaboradoresReserva={colaboradoresReserva}
+              selectedRegional={selectedRegional}
+              selectedDate={selectedDate}
+            />
+          )}
+        </main>
+
+        {modalNovaEquipeAberto && (
+          <NewTeamModal
+            isOpen={modalNovaEquipeAberto}
+            onClose={() => setModalNovaEquipeAberto(false)}
+            onSave={(novoVeiculo) => {
+              if (novoVeiculo) {
+                setVeiculos((prev) => [novoVeiculo, ...(prev || [])]);
+              }
+              setModalNovaEquipeAberto(false);
+            }}
           />
         )}
-
-        {/* Visualização por Abas */}
-        {activeTab === 'veiculos' && (
-          <VehicleCardGrid
-            veiculos={veiculos}
-            colaboradoresReserva={colaboradoresReserva}
-            onUpdateStatus={handleUpdateStatus}
-            selectedRegional={selectedRegional}
-            onOpenNewTeamModal={() => setIsNewTeamModalOpen(true)}
-          />
-        )}
-
-        {activeTab === 'colaboradores' && (
-          <CollaboratorsManagement
-            veiculos={veiculos}
-            colaboradoresReserva={colaboradoresReserva}
-            onImportarColaboradores={handleImportarColaboradores}
-            onAdicionarColaborador={handleAdicionarColaborador}
-          />
-        )}
-
-        {activeTab === 'equipes' && (
-          <TeamsManagement
-            veiculos={veiculos}
-            onNovaEquipe={() => setIsNewTeamModalOpen(true)}
-          />
-        )}
-
-        {activeTab === 'relatorios' && (
-          <ExportReports
-            veiculos={veiculos}
-            selectedDate={selectedDate}
-          />
-        )}
-      </main>
-
-      {/* Modal de Nova Equipe / Veículo */}
-      <NewTeamModal
-        isOpen={isNewTeamModalOpen}
-        onClose={() => setIsNewTeamModalOpen(false)}
-        onSave={handleSaveNewTeam}
-        colaboradoresReserva={colaboradoresReserva}
-      />
-    </div>
+      </div>
+    </AppErrorBoundary>
   );
 }
 

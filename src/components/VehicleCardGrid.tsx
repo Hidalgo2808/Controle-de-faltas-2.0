@@ -1,478 +1,309 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Car,
-  Search,
-  Filter,
+  User,
+  Users,
+  AlertTriangle,
   UserCheck,
   UserX,
-  RefreshCw,
-  AlertTriangle,
-  Users,
-  MapPin,
-  ChevronRight,
-  Shield,
-  Layers,
-  Sparkles,
+  Phone,
+  ArrowRightLeft,
   CheckCircle2,
+  Clock,
+  ChevronRight,
+  ShieldAlert,
 } from 'lucide-react';
-import { Veiculo, Colaborador, StatusPresenca, MotivoFalta, Regional } from '../types';
-import { VehicleTopView, VehicleZone } from './VehicleTopView';
-import { AttendanceModal } from './AttendanceModal';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
-import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { Veiculo, Colaborador, StatusPresenca, MotivoFalta, Regional } from '../types';
+import { AttendanceModal } from './AttendanceModal';
 import { cn } from '@/lib/utils';
 
 export interface VehicleCardGridProps {
-  veiculos: Veiculo[];
+  veiculos?: Veiculo[];
   colaboradoresReserva?: Colaborador[];
-  onUpdateStatus: (
+  selectedRegional?: Regional | string;
+  onStatusChange?: (
     veiculoId: string,
-    colaboradorId: string,
+    posicao: 'motorista' | 'frenteDir' | 'trasEsq' | 'trasDir',
     novoStatus: StatusPresenca,
     motivoFalta?: MotivoFalta,
-    substituto?: Colaborador
+    observacao?: string,
+    substitutoId?: string,
+    substitutoNome?: string
   ) => void;
-  selectedRegional: Regional;
-  onOpenNewTeamModal?: () => void;
+  onAdicionarColaborador?: (veiculoId: string, equipeNumero: 1 | 2) => void;
+  onVerDetalhesEquipe?: (veiculoId: string) => void;
 }
+
+const statusBadgeConfig: Record<StatusPresenca, { label: string; className: string; icon: React.ElementType }> = {
+  presente: {
+    label: 'Presente',
+    className: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    icon: UserCheck,
+  },
+  falta: {
+    label: 'Falta',
+    className: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+    icon: UserX,
+  },
+  substituto: {
+    label: 'Substituto',
+    className: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+    icon: ArrowRightLeft,
+  },
+};
+
+const posicaoLabel: Record<string, string> = {
+  motorista: 'Motorista (Eq. 1)',
+  frenteDir: 'Apoio Dianteiro (Eq. 1)',
+  trasEsq: 'Apoio Traseiro Esq. (Eq. 2)',
+  trasDir: 'Apoio Traseiro Dir. (Eq. 2)',
+};
 
 export const VehicleCardGrid: React.FC<VehicleCardGridProps> = ({
   veiculos = [],
   colaboradoresReserva = [],
-  onUpdateStatus,
   selectedRegional = 'todas',
-  onOpenNewTeamModal,
+  onStatusChange,
+  onAdicionarColaborador,
+  onVerDetalhesEquipe,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'todos' | 'com_faltas' | 'completos'>('todos');
-  const [activeUnitTab, setActiveUnitTab] = useState<'todas' | 'ribas' | 'agua_clara'>('todas');
+  const [modalAberto, setModalAberto] = useState(false);
+  const [colaboradorSelecionado, setColaboradorSelecionado] = useState<Colaborador | null>(null);
+  const [veiculoSelecionado, setVeiculoSelecionado] = useState<Veiculo | null>(null);
+  const [posicaoSelecionada, setPosicaoSelecionada] = useState<'motorista' | 'frenteDir' | 'trasEsq' | 'trasDir'>('motorista');
 
-  // Modal de Presença
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedColaborador, setSelectedColaborador] = useState<Colaborador | null>(null);
-  const [selectedVeiculoId, setSelectedVeiculoId] = useState<string | null>(null);
+  const veiculosFiltrados = (veiculos || []).filter((v) => {
+    if (!v) return false;
+    if (selectedRegional === 'todas') return true;
+    return v.regional === selectedRegional;
+  });
 
-  // Sincroniza o tab interno com o filtro global de regional caso mude
-  const effectiveRegional = selectedRegional !== 'todas' ? selectedRegional : activeUnitTab;
-
-  const handleSeatClick = (veiculoId: string, _posicao: VehicleZone, colaborador: Colaborador) => {
-    setSelectedVeiculoId(veiculoId);
-    setSelectedColaborador(colaborador);
-    setModalOpen(true);
+  const abrirModalChamada = (
+    veiculo: Veiculo,
+    colaborador: Colaborador,
+    posicao: 'motorista' | 'frenteDir' | 'trasEsq' | 'trasDir'
+  ) => {
+    setVeiculoSelecionado(veiculo);
+    setColaboradorSelecionado(colaborador);
+    setPosicaoSelecionada(posicao);
+    setModalAberto(true);
   };
 
-  const handleSaveAttendance = (
-    veiculoId: string,
-    colaboradorId: string,
+  const handleSalvarStatus = (
     novoStatus: StatusPresenca,
     motivoFalta?: MotivoFalta,
-    substituto?: Colaborador
+    observacao?: string,
+    substitutoId?: string,
+    substitutoNome?: string
   ) => {
-    onUpdateStatus(veiculoId, colaboradorId, novoStatus, motivoFalta, substituto);
-    setModalOpen(false);
-    setSelectedColaborador(null);
-    setSelectedVeiculoId(null);
+    if (veiculoSelecionado && onStatusChange) {
+      onStatusChange(
+        veiculoSelecionado.id,
+        posicaoSelecionada,
+        novoStatus,
+        motivoFalta,
+        observacao,
+        substitutoId,
+        substitutoNome
+      );
+    }
+    setModalAberto(false);
   };
 
-  // Filtragem de veículos
-  const filteredVeiculos = useMemo(() => {
-    return (veiculos || []).filter((veiculo) => {
-      if (!veiculo) return false;
-
-      // Filtro por Unidade / Regional
-      if (effectiveRegional !== 'todas' && veiculo.regional !== effectiveRegional) {
-        return false;
-      }
-
-      // Filtro por Busca (prefixo, placa, modelo, ou nomes dos colaboradores)
-      if (searchTerm.trim()) {
-        const term = searchTerm.toLowerCase();
-        const prefixoMatch = (veiculo.prefixo || '').toLowerCase().includes(term);
-        const placaMatch = (veiculo.placa || '').toLowerCase().includes(term);
-        const modeloMatch = (veiculo.modelo || '').toLowerCase().includes(term);
-        const eq1Match = (veiculo.equipe1Codigo || '').toLowerCase().includes(term);
-        const eq2Match = (veiculo.equipe2Codigo || '').toLowerCase().includes(term);
-
-        const assentos = [
-          veiculo.assentos?.motorista?.nome,
-          veiculo.assentos?.frenteDir?.nome,
-          veiculo.assentos?.trasEsq?.nome,
-          veiculo.assentos?.trasDir?.nome,
-        ];
-        const colabMatch = assentos.some((nome) => (nome || '').toLowerCase().includes(term));
-
-        if (!prefixoMatch && !placaMatch && !modeloMatch && !eq1Match && !eq2Match && !colabMatch) {
-          return false;
-        }
-      }
-
-      // Filtro por Status da Equipe
-      if (filterStatus !== 'todos') {
-        const assentos = [
-          veiculo.assentos?.motorista?.status,
-          veiculo.assentos?.frenteDir?.status,
-          veiculo.assentos?.trasEsq?.status,
-          veiculo.assentos?.trasDir?.status,
-        ];
-
-        const temFalta = assentos.some((st) => st === 'falta');
-        if (filterStatus === 'com_faltas' && !temFalta) return false;
-        if (filterStatus === 'completos' && temFalta) return false;
-      }
-
-      return true;
-    });
-  }, [veiculos, effectiveRegional, searchTerm, filterStatus]);
-
-  // Agrupamento por unidade para enquadramento perfeito em "Todas as Unidades"
-  const veiculosPorUnidade = useMemo(() => {
-    const ribas = filteredVeiculos.filter((v) => v.regional === 'ribas');
-    const aguaClara = filteredVeiculos.filter((v) => v.regional === 'agua_clara');
-    return { ribas, aguaClara };
-  }, [filteredVeiculos]);
-
-  // Contadores rápidos de enquadramento
-  const contadores = useMemo(() => {
-    const totalRibas = (veiculos || []).filter((v) => v.regional === 'ribas').length;
-    const totalAguaClara = (veiculos || []).filter((v) => v.regional === 'agua_clara').length;
-    return {
-      total: (veiculos || []).length,
-      ribas: totalRibas,
-      aguaClara: totalAguaClara,
-    };
-  }, [veiculos]);
-
-  const renderVeiculoCard = (veiculo: Veiculo) => {
-    const assentos = [
-      veiculo.assentos?.motorista,
-      veiculo.assentos?.frenteDir,
-      veiculo.assentos?.trasEsq,
-      veiculo.assentos?.trasDir,
-    ];
-
-    const presentes = assentos.filter((a) => a?.status === 'presente').length;
-    const faltas = assentos.filter((a) => a?.status === 'falta').length;
-    const substitutos = assentos.filter((a) => a?.status === 'substituto').length;
-    const isEquipeCompleta = faltas === 0;
-
+  if (veiculosFiltrados.length === 0) {
     return (
-      <Card
-        key={veiculo.id}
-        className={cn(
-          'relative overflow-hidden transition-all duration-200 border bg-card/85 hover:shadow-xl hover:border-border/80 flex flex-col',
-          faltas > 0
-            ? 'border-rose-500/30 ring-1 ring-rose-500/10'
-            : substitutos > 0
-            ? 'border-amber-500/30 ring-1 ring-amber-500/10'
-            : 'border-border/60 hover:border-primary/40'
-        )}
-      >
-        {/* Faixa superior com identificação e status do veículo */}
-        <div className="p-4 sm:p-5 border-b border-border/50 bg-muted/20 flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                'w-11 h-11 rounded-xl flex items-center justify-center font-black text-sm border shadow-sm shrink-0',
-                veiculo.regional === 'ribas'
-                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                  : 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
-              )}
-            >
-              <Car className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-base sm:text-lg text-foreground tracking-tight">
-                  {veiculo.prefixo}
-                </h3>
-                <span className="text-xs px-2 py-0.5 rounded-md bg-muted/60 text-muted-foreground font-mono font-semibold border border-border/40">
-                  {veiculo.placa}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                <span>{veiculo.modelo}</span>
-                <span className="opacity-40">•</span>
-                <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground/90">
-                  <MapPin className="w-3 h-3 text-primary/70" />
-                  {veiculo.regional === 'ribas' ? 'Ribas do Rio Pardo' : 'Água Clara'}
-                </span>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={isEquipeCompleta ? 'success' : 'destructive'}
-              className="text-[11px] px-2.5 py-0.5 font-semibold"
-            >
-              {isEquipeCompleta ? (
-                <span className="flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Completa
-                </span>
-              ) : (
-                <span className="flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" /> {faltas} Falta{faltas > 1 ? 's' : ''}
-                </span>
-              )}
-            </Badge>
-          </div>
-        </div>
-
-        {/* Resumo da composição das Equipes 1 e 2 */}
-        <div className="px-4 py-2 bg-muted/10 border-b border-border/40 flex items-center justify-between text-xs font-semibold text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>Dianteira: <span className="text-foreground">{veiculo.equipe1Codigo || 'EQ-1'}</span></span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-            <span>Traseira: <span className="text-foreground">{veiculo.equipe2Codigo || 'EQ-2'}</span></span>
-          </div>
-        </div>
-
-        {/* Visualização e Grid dos 4 Assentos */}
-        <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
-          <VehicleTopView
-            veiculo={veiculo}
-            onAssentoClick={(posicao, colab) => handleSeatClick(veiculo.id, posicao, colab)}
-          />
-
-          {/* Rodapé do card com métricas rápidas de presença */}
-          <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 text-emerald-400 font-medium">
-                <UserCheck className="w-3.5 h-3.5" /> {presentes} pres.
-              </span>
-              {faltas > 0 && (
-                <span className="flex items-center gap-1 text-rose-400 font-medium">
-                  <UserX className="w-3.5 h-3.5" /> {faltas} falta
-                </span>
-              )}
-              {substitutos > 0 && (
-                <span className="flex items-center gap-1 text-amber-400 font-medium">
-                  <RefreshCw className="w-3.5 h-3.5" /> {substitutos} subst.
-                </span>
-              )}
-            </div>
-            <span className="text-[11px] text-muted-foreground font-medium">
-              Clique no assento p/ alterar
-            </span>
-          </div>
-        </div>
-      </Card>
+      <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border border-dashed border-border/80 bg-card/40">
+        <Car className="w-12 h-12 text-muted-foreground/50 mb-3" />
+        <h3 className="text-base font-semibold text-foreground">Nenhum veículo encontrado</h3>
+        <p className="text-sm text-muted-foreground max-w-sm mt-1">
+          Não há veículos cadastrados para esta regional ou filtro selecionado.
+        </p>
+      </div>
     );
-  };
+  }
 
   return (
-    <div className="space-y-6 w-full animate-in fade-in duration-200">
-      {/* Barra de Filtros e Enquadramento Superior */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 p-4 rounded-2xl bg-card/60 border border-border backdrop-blur-md">
-        {/* Seletor Rápido de Enquadramento por Unidade */}
-        <div className="flex items-center p-1 bg-muted/40 rounded-xl border border-border/50 self-start md:self-auto overflow-x-auto max-w-full">
-          <button
-            type="button"
-            onClick={() => setActiveUnitTab('todas')}
-            className={cn(
-              'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap',
-              effectiveRegional === 'todas'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-            )}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Todas as Unidades</span>
-            <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0 h-4 font-bold bg-background/50">
-              {contadores.total}
-            </Badge>
-          </button>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {veiculosFiltrados.map((veiculo) => {
+          if (!veiculo || !veiculo.assentos) return null;
 
-          <button
-            type="button"
-            onClick={() => setActiveUnitTab('ribas')}
-            className={cn(
-              'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap',
-              effectiveRegional === 'ribas'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-            )}
-          >
-            <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Ribas do Rio Pardo</span>
-            <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0 h-4 font-bold bg-background/50">
-              {contadores.ribas}
-            </Badge>
-          </button>
+          const assentosArray: Array<{
+            colab: Colaborador;
+            posKey: 'motorista' | 'frenteDir' | 'trasEsq' | 'trasDir';
+            equipeNum: 1 | 2;
+          }> = [
+            { colab: veiculo.assentos.motorista, posKey: 'motorista', equipeNum: 1 },
+            { colab: veiculo.assentos.frenteDir, posKey: 'frenteDir', equipeNum: 1 },
+            { colab: veiculo.assentos.trasEsq, posKey: 'trasEsq', equipeNum: 2 },
+            { colab: veiculo.assentos.trasDir, posKey: 'trasDir', equipeNum: 2 },
+          ];
 
-          <button
-            type="button"
-            onClick={() => setActiveUnitTab('agua_clara')}
-            className={cn(
-              'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap',
-              effectiveRegional === 'agua_clara'
-                ? 'bg-cyan-600 text-white shadow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-            )}
-          >
-            <MapPin className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Água Clara</span>
-            <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0 h-4 font-bold bg-background/50">
-              {contadores.aguaClara}
-            </Badge>
-          </button>
-        </div>
+          const totalFaltas = assentosArray.filter((a) => a.colab?.status === 'falta').length;
+          const totalPresentes = assentosArray.filter((a) => a.colab?.status === 'presente' || a.colab?.status === 'substituto').length;
 
-        {/* Busca e Filtros de Status */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="relative min-w-[220px] flex-1 sm:flex-initial">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <Input
-              type="text"
-              placeholder="Buscar carro, placa ou colaborador..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9 text-xs bg-muted/30"
-            />
-          </div>
-
-          <div className="flex items-center gap-1 p-1 bg-muted/40 rounded-xl border border-border/50">
-            <button
-              type="button"
-              onClick={() => setFilterStatus('todos')}
+          return (
+            <Card
+              key={veiculo.id}
               className={cn(
-                'px-2.5 py-1 rounded-lg text-xs font-medium transition-all',
-                filterStatus === 'todos'
-                  ? 'bg-primary/20 text-primary border border-primary/30'
-                  : 'text-muted-foreground hover:text-foreground'
+                'group relative overflow-hidden transition-all duration-200 hover:shadow-xl border-border/80 bg-card/80 backdrop-blur-sm',
+                totalFaltas > 0 && 'border-rose-500/30'
               )}
             >
-              Todos
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterStatus('com_faltas')}
-              className={cn(
-                'px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1',
-                filterStatus === 'com_faltas'
-                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                  : 'text-muted-foreground hover:text-rose-400'
-              )}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-              Com Faltas
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterStatus('completos')}
-              className={cn(
-                'px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1',
-                filterStatus === 'completos'
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                  : 'text-muted-foreground hover:text-emerald-400'
-              )}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              Completos
-            </button>
-          </div>
-        </div>
+              {/* Header do Card com Prefixo, Placa e Regional */}
+              <CardHeader className="p-4 pb-3 border-b border-border/40 bg-muted/20">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                      <Car className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-sm font-bold tracking-tight text-foreground flex items-center gap-2">
+                        {veiculo.prefixo}
+                        <span className="text-xs px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground font-mono font-medium">
+                          {veiculo.placa}
+                        </span>
+                      </CardTitle>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{veiculo.modelo}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'text-[10px] px-2 py-0.5 font-semibold',
+                        veiculo.regional === 'ribas'
+                          ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
+                          : 'border-teal-500/30 text-teal-400 bg-teal-500/10'
+                      )}
+                    >
+                      {veiculo.regional === 'ribas' ? 'Ribas' : 'Água Clara'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Sub-barra com status das duas equipes */}
+                <div className="mt-3 pt-2.5 border-t border-border/30 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      {veiculo.equipe1Codigo}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+                      {veiculo.equipe2Codigo}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {totalFaltas > 0 ? (
+                      <span className="flex items-center gap-1 text-rose-400 font-semibold">
+                        <AlertTriangle className="w-3 h-3" />
+                        {totalFaltas} {totalFaltas === 1 ? 'falta' : 'faltas'}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-emerald-400 font-medium">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Equipe 100%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+
+              {/* Assentos dos Colaboradores */}
+              <CardContent className="p-3.5 space-y-2">
+                {assentosArray.map(({ colab, posKey, equipeNum }) => {
+                  if (!colab) return null;
+                  const cfg = statusBadgeConfig[colab.status] || statusBadgeConfig.presente;
+                  const IconStatus = cfg.icon;
+
+                  return (
+                    <div
+                      key={colab.id || posKey}
+                      onClick={() => abrirModalChamada(veiculo, colab, posKey)}
+                      className={cn(
+                        'p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3',
+                        'hover:border-primary/40 hover:bg-muted/40 active:scale-[0.99]',
+                        colab.status === 'falta'
+                          ? 'border-rose-500/25 bg-rose-500/5 hover:border-rose-500/40'
+                          : colab.status === 'substituto'
+                          ? 'border-amber-500/25 bg-amber-500/5 hover:border-amber-500/40'
+                          : 'border-border/50 bg-card/60'
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {colab.foto ? (
+                          <img
+                            src={colab.foto}
+                            alt={colab.nome}
+                            className="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-border"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0 text-muted-foreground">
+                            <User className="w-4 h-4" />
+                          </div>
+                        )}
+
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground truncate">
+                            {colab.nome}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {colab.cargo}
+                          </p>
+                          {colab.status === 'substituto' && colab.substitutoNome && (
+                            <p className="text-[10px] text-amber-400 font-medium truncate mt-0.5">
+                              Subst. por: {colab.substitutoNome}
+                            </p>
+                          )}
+                          {colab.status === 'falta' && colab.motivoFalta && (
+                            <p className="text-[10px] text-rose-400 font-medium truncate mt-0.5">
+                              {colab.motivoFalta}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Badge
+                          variant="outline"
+                          className={cn('text-[10px] px-2 py-0.5 flex items-center gap-1 font-semibold', cfg.className)}
+                        >
+                          <IconStatus className="w-2.5 h-2.5" />
+                          {cfg.label}
+                        </Badge>
+                        <span className="text-[9px] text-muted-foreground">
+                          {posicaoLabel[posKey] || posKey}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      {/* RENDERIZAÇÃO DO ENQUADRAMENTO */}
-      {filteredVeiculos.length === 0 ? (
-        <Card className="border-dashed p-12 text-center bg-card/40">
-          <div className="w-16 h-16 rounded-full bg-muted/40 border border-border flex items-center justify-center mx-auto mb-4 text-muted-foreground">
-            <Car className="w-8 h-8 opacity-40" />
-          </div>
-          <h3 className="text-base font-bold text-foreground mb-1">Nenhum veículo encontrado</h3>
-          <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-4">
-            Não encontramos veículos para os filtros e critérios de busca selecionados nesta unidade.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSearchTerm('');
-              setFilterStatus('todos');
-              setActiveUnitTab('todas');
-            }}
-          >
-            Limpar Filtros
-          </Button>
-        </Card>
-      ) : effectiveRegional === 'todas' ? (
-        /* Enquadramento Duplo e Harmônico para "Todas as Unidades" */
-        <div className="space-y-8">
-          {/* Seção 1: Ribas do Rio Pardo */}
-          {veiculosPorUnidade.ribas.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></div>
-                  <h2 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
-                    Regional Ribas do Rio Pardo
-                    <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-semibold">
-                      {veiculosPorUnidade.ribas.length} Veículo{veiculosPorUnidade.ribas.length > 1 ? 's' : ''}
-                    </Badge>
-                  </h2>
-                </div>
-                <span className="text-xs text-muted-foreground hidden sm:inline">
-                  Operações Florestais e Transporte Integrado
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
-                {veiculosPorUnidade.ribas.map(renderVeiculoCard)}
-              </div>
-            </div>
-          )}
-
-          {/* Seção 2: Água Clara */}
-          {veiculosPorUnidade.aguaClara.length > 0 && (
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-3 h-3 rounded-full bg-cyan-500 ring-4 ring-cyan-500/20"></div>
-                  <h2 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
-                    Regional Água Clara
-                    <Badge variant="outline" className="text-xs bg-cyan-500/10 text-cyan-400 border-cyan-500/30 font-semibold">
-                      {veiculosPorUnidade.aguaClara.length} Veículo{veiculosPorUnidade.aguaClara.length > 1 ? 's' : ''}
-                    </Badge>
-                  </h2>
-                </div>
-                <span className="text-xs text-muted-foreground hidden sm:inline">
-                  Unidade Florestal de Apoio e Silvicultura
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
-                {veiculosPorUnidade.aguaClara.map(renderVeiculoCard)}
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        /* Enquadramento Direto para Unidade Específica */
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
-          {filteredVeiculos.map(renderVeiculoCard)}
-        </div>
-      )}
-
-      {/* Modal de Presença / Falta / Substituto */}
-      {modalOpen && selectedColaborador && selectedVeiculoId && (
+      {modalAberto && colaboradorSelecionado && veiculoSelecionado && (
         <AttendanceModal
-          colaborador={selectedColaborador}
-          veiculoId={selectedVeiculoId}
-          onClose={() => {
-            setModalOpen(false);
-            setSelectedColaborador(null);
-            setSelectedVeiculoId(null);
-          }}
-          onSave={handleSaveAttendance}
+          isOpen={modalAberto}
+          onClose={() => setModalAberto(false)}
+          colaborador={colaboradorSelecionado}
+          veiculo={veiculoSelecionado}
+          posicao={posicaoSelecionada}
           colaboradoresReserva={colaboradoresReserva}
+          onSalvarStatus={handleSalvarStatus}
         />
       )}
-    </div>
+    </>
   );
 };

@@ -9,7 +9,6 @@ import {
   Check,
   ChevronDown,
   Building2,
-  Sparkles,
 } from 'lucide-react';
 import { Regional } from '../types';
 import { Badge } from './ui/badge';
@@ -139,14 +138,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/90 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Linha Superior: Logo Oficial da Empresa + Seletor de Unidades + Seletor de Data */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 py-3 border-b border-border/40">
-          
-          {/* Lado Esquerdo: Logo da Empresa + Identificação */}
           <div className="flex flex-wrap items-center gap-3">
-            {/* Logo da Empresa estilizada */}
             <div className="flex items-center gap-3">
-              <div className="h-10 px-2.5 py-1 rounded-xl bg-gradient-to-r from-emerald-950/40 via-card to-card border border-emerald-500/25 shadow-sm flex items-center justify-center shrink-0 overflow-hidden group hover:border-emerald-500/40 transition-all">
+              <div className="h-10 px-2.5 py-1 rounded-xl bg-gradient-to-r from-emerald-950/40 via-card to-card border border-emerald-500/25 shadow-sm flex items-center justify-center shrink-0 overflow-hidden">
                 <img
                   src="/logo_inventar_expandWEB_novo2.jpg"
                   alt="Logo da Empresa"
@@ -171,10 +166,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </div>
 
-            {/* Separador Visual */}
             <div className="hidden sm:block h-7 w-[1px] bg-border/80 mx-1" />
 
-            {/* Seletor Dropdown de Unidades Operacionais */}
             <div className="relative" ref={dropdownUnidadeRef}>
               <button
                 type="button"
@@ -202,42 +195,39 @@ export const Navbar: React.FC<NavbarProps> = ({
                 />
               </button>
 
-              {/* Menu Dropdown de Unidades */}
               {dropdownUnidadeAberto && (
-                <div className="absolute left-0 top-full mt-2 w-72 rounded-2xl border border-emerald-500/30 bg-card/95 backdrop-blur-xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-2 py-1.5 mb-1 border-b border-border/50">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-emerald-400" /> Selecionar Unidade
-                    </p>
+                <div className="absolute left-0 mt-2 w-72 rounded-2xl border border-border/80 bg-popover/95 backdrop-blur-xl p-2 shadow-2xl z-50 animate-in fade-in-50 zoom-in-95">
+                  <div className="px-3 py-2 text-[11px] font-semibold text-muted-foreground border-b border-border/40">
+                    Selecione a Unidade Operacional
                   </div>
-                  <div className="space-y-1">
-                    {REGIONAIS.map((reg) => {
-                      const isSelected = selectedRegional === reg.id;
+                  <div className="mt-1 space-y-1">
+                    {REGIONAIS.map((regional) => {
+                      const isSelected = selectedRegional === regional.id;
                       return (
                         <button
-                          key={reg.id}
+                          key={regional.id}
                           type="button"
                           onClick={() => {
-                            onRegionalChange(reg.id);
+                            onRegionalChange(regional.id);
                             setDropdownUnidadeAberto(false);
                           }}
                           className={cn(
-                            'w-full flex items-center justify-between p-2 rounded-xl text-left text-xs transition-all cursor-pointer',
+                            'w-full flex items-start gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs transition-all cursor-pointer',
                             isSelected
-                              ? 'bg-emerald-500/15 text-emerald-400 font-bold border border-emerald-500/30'
-                              : 'text-foreground hover:bg-muted/60 hover:text-foreground'
+                              ? regional.activeBg + ' font-semibold'
+                              : 'text-foreground hover:bg-muted/60'
                           )}
                         >
-                          <div className="flex items-center gap-2.5">
-                            <span className={cn('w-2 h-2 rounded-full shrink-0', reg.dotColor)} />
-                            <div>
-                              <p className="font-semibold leading-tight">{reg.label}</p>
-                              <p className="text-[10px] text-muted-foreground font-normal leading-tight mt-0.5">
-                                {reg.description}
-                              </p>
+                          <span className={cn('w-2 h-2 rounded-full mt-1.5 shrink-0', regional.dotColor)} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold">{regional.label}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
                             </div>
+                            <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
+                              {regional.description}
+                            </p>
                           </div>
-                          {isSelected && <Check className="w-4 h-4 text-emerald-400 shrink-0" />}
                         </button>
                       );
                     })}
@@ -247,9 +237,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Lado Direito: Seletor de Data */}
-          <div className="flex items-center justify-end gap-2 shrink-0">
-            <div className="relative" ref={dropdownDataRef}>
+          <div className="flex items-center gap-2 self-end md:self-center" ref={dropdownDataRef}>
+            <div className="relative">
               <button
                 type="button"
                 onClick={() => {
@@ -257,7 +246,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setDropdownUnidadeAberto(false);
                 }}
                 className={cn(
-                  'flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition-all duration-200 shadow-sm cursor-pointer',
+                  'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all duration-200 shadow-sm cursor-pointer',
                   'bg-card/90 hover:bg-card hover:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/30',
                   dropdownDataAberto ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-500/5' : 'border-border/80'
                 )}
@@ -272,19 +261,26 @@ export const Navbar: React.FC<NavbarProps> = ({
                 />
               </button>
 
-              {/* Popover de Seleção de Data */}
               {dropdownDataAberto && (
-                <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-emerald-500/30 bg-card/95 backdrop-blur-xl shadow-2xl p-3.5 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-emerald-400" /> Escolha o Dia da Operação
-                  </p>
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-border/80 bg-popover/95 backdrop-blur-xl p-3 shadow-2xl z-50">
+                  <p className="text-xs font-semibold text-foreground mb-2">Alterar data de referência:</p>
                   <input
                     type="date"
                     value={formatarDataInput(selectedDate)}
                     onChange={handleDataChangeFromInput}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-border/80 bg-background text-foreground font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/40 cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                   />
-                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
+                  <div className="mt-2.5 flex justify-between gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onDateChange(new Date());
+                        setDropdownDataAberto(false);
+                      }}
+                      className="flex-1 py-1 px-2 rounded-lg bg-emerald-500/15 text-emerald-400 text-[11px] font-bold hover:bg-emerald-500/25 transition-all text-center"
+                    >
+                      Hoje
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
@@ -293,31 +289,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                         onDateChange(ontem);
                         setDropdownDataAberto(false);
                       }}
-                      className="text-[11px] font-semibold text-muted-foreground hover:text-emerald-400 transition-colors"
+                      className="flex-1 py-1 px-2 rounded-lg bg-muted text-muted-foreground text-[11px] font-semibold hover:bg-muted/80 transition-all text-center"
                     >
                       Ontem
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onDateChange(new Date());
-                        setDropdownDataAberto(false);
-                      }}
-                      className="text-[11px] font-bold text-emerald-400 hover:underline"
-                    >
-                      Hoje
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const amanha = new Date();
-                        amanha.setDate(amanha.getDate() + 1);
-                        onDateChange(amanha);
-                        setDropdownDataAberto(false);
-                      }}
-                      className="text-[11px] font-semibold text-muted-foreground hover:text-emerald-400 transition-colors"
-                    >
-                      Amanhã
                     </button>
                   </div>
                 </div>
@@ -326,8 +300,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Linha Inferior: Abas de Navegação Principal */}
-        <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto py-2.5 no-scrollbar">
+        <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto py-2 no-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -337,13 +310,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 type="button"
                 onClick={() => handleTabSelect(item.id)}
                 className={cn(
-                  'flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shrink-0 cursor-pointer',
+                  'flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-150 whitespace-nowrap cursor-pointer',
                   isActive
-                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-950/20'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                 )}
               >
-                <Icon className={cn('w-4 h-4', isActive ? 'text-white' : 'text-muted-foreground')} />
+                <Icon className={cn('w-4 h-4', isActive ? 'text-primary-foreground' : 'text-muted-foreground')} />
                 <span>{item.label}</span>
               </button>
             );

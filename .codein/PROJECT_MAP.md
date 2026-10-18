@@ -1,12 +1,13 @@
 # 🗺️ Mapa de Arquitetura e Estrutura — Controle de Faltas
 
-> **Sincronizado automaticamente pelo Code In Engine** em `2026-10-12 16:00:29`
+> **Sincronizado automaticamente pelo Code In Engine** em `2026-10-18 14:16:15`
 > Este documento é a referência viva e em tempo real da arquitetura, componentes e entidades de negócio do projeto.
 
 ---
 
 ## 1. Visão Geral do Domínio e Identidade
 - **Nome do Projeto**: `Controle de Faltas`
+- **Headline / Proposta de Valor**: *"Recuperação de Inicialização"*
 - **Descrição**: Aplicação SPA modular desenvolvida sob medida com Vite, React, TypeScript e Tailwind CSS.
 - **Stack Tecnológica**: React 18 + TypeScript + Vite + Tailwind CSS
 - **Design Tokens**: Configurados em `src/index.css` e `tailwind.config.js`
@@ -41,7 +42,6 @@
         │     └── `src/components/index.ts` — Componente React modular (index)
         ├── `src/components/VehicleCardGrid.tsx` — Grid/Catálogo interativo de produtos com filtros e cards
         │     └── `src/components/AttendanceModal.tsx` — Modal/Dialog interativo (AttendanceModal)
-        │     └── `src/components/VehicleTopView.tsx` — Componente React modular (VehicleTopView)
         │     └── `src/components/utils.ts` — Componente React modular (utils)
         │     └── `src/components/index.ts` — Componente React modular (index)
         ├── `src/components/mockData.ts` — Componente React modular (mockData)
@@ -87,10 +87,10 @@
 
 - **`src/components/VehicleCardGrid.tsx`** (VehicleCardGrid): Grid/Catálogo interativo de produtos com filtros e cards
   - *Importado por*: `src/App.tsx`
-  - *Sub-componentes*: `src/types/index.ts`, `src/components/VehicleTopView.tsx`, `src/components/AttendanceModal.tsx`, `src/components/ui/card.tsx`, `src/components/ui/badge.tsx`, `src/components/ui/input.tsx`, `src/components/ui/button.tsx`, `src/lib/utils.ts`
+  - *Sub-componentes*: `src/components/ui/card.tsx`, `src/components/ui/badge.tsx`, `src/components/ui/button.tsx`, `src/types/index.ts`, `src/components/AttendanceModal.tsx`, `src/lib/utils.ts`
 
 - **`src/components/VehicleTopView.tsx`** (VehicleTopView): Componente React modular (VehicleTopView)
-  - *Importado por*: `src/components/ComponentShowcase.tsx`, `src/components/VehicleCardGrid.tsx`
+  - *Importado por*: `src/components/ComponentShowcase.tsx`
   - *Sub-componentes*: `src/types/index.ts`, `src/lib/utils.ts`
 
 ### 🎨 Componentes Base de UI (`src/components/ui/`):

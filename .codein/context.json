@@ -1,10 +1,10 @@
 {
   "projectName": "meu-projeto",
   "framework": "React 18 + TypeScript + Vite + Tailwind CSS",
-  "updatedAt": 1791820829220,
+  "updatedAt": 1792332975581,
   "domain": {
     "title": "Controle de Faltas",
-    "tagline": "",
+    "tagline": "Recuperação de Inicialização",
     "description": "Aplicação SPA modular desenvolvida sob medida com Vite, React, TypeScript e Tailwind CSS.",
     "dataEntities": [],
     "features": []
@@ -22,7 +22,8 @@
         "src/components/ExportReports.tsx",
         "src/components/NewTeamModal.tsx",
         "src/data/mockData.ts",
-        "src/types/index.ts"
+        "src/types/index.ts",
+        "src/components/ui/button.tsx"
       ],
       "importedBy": [
         "src/main.tsx"
@@ -172,6 +173,7 @@
         "src/lib/utils.ts"
       ],
       "importedBy": [
+        "src/App.tsx",
         "src/components/AttendanceModal.tsx",
         "src/components/CollaboratorsManagement.tsx",
         "src/components/ExportReports.tsx",
@@ -207,8 +209,7 @@
       "importedBy": [
         "src/components/CollaboratorsManagement.tsx",
         "src/components/NewTeamModal.tsx",
-        "src/components/TeamsManagement.tsx",
-        "src/components/VehicleCardGrid.tsx"
+        "src/components/TeamsManagement.tsx"
       ],
       "description": "Componente base de UI reutilizável (input)",
       "isUiBase": true
@@ -217,13 +218,11 @@
       "relPath": "src/components/VehicleCardGrid.tsx",
       "name": "VehicleCardGrid",
       "imports": [
-        "src/types/index.ts",
-        "src/components/VehicleTopView.tsx",
-        "src/components/AttendanceModal.tsx",
         "src/components/ui/card.tsx",
         "src/components/ui/badge.tsx",
-        "src/components/ui/input.tsx",
         "src/components/ui/button.tsx",
+        "src/types/index.ts",
+        "src/components/AttendanceModal.tsx",
         "src/lib/utils.ts"
       ],
       "importedBy": [
@@ -240,8 +239,7 @@
         "src/lib/utils.ts"
       ],
       "importedBy": [
-        "src/components/ComponentShowcase.tsx",
-        "src/components/VehicleCardGrid.tsx"
+        "src/components/ComponentShowcase.tsx"
       ],
       "description": "Componente React modular (VehicleTopView)",
       "isUiBase": false
@@ -322,6 +320,7 @@
     "package-lock.json",
     "package.json",
     "postcss.config.js",
+    "server.js",
     "src/App.tsx",
     "src/components/AttendanceModal.tsx",
     "src/components/CollaboratorsManagement.tsx",
