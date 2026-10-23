@@ -26,15 +26,15 @@ export interface TeamsManagementProps {
   onNovaEquipeClick?: () => void;
 }
 
-const regionalLabel: Record<string, string> = {
-  todas: 'Todas as Unidades',
-  ribas: 'Ribas do Rio Pardo',
-  agua_clara: 'Água Clara',
+const getIniciais = (nome?: string) => {
+  if (!nome) return 'OP';
+  const partes = nome.trim().split(' ');
+  if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+  return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
 };
 
 export const TeamsManagement: React.FC<TeamsManagementProps> = ({
   veiculos = [],
-  colaboradoresReserva = [],
   selectedRegional = 'todas',
   onNovaEquipeClick,
 }) => {
@@ -115,7 +115,7 @@ export const TeamsManagement: React.FC<TeamsManagementProps> = ({
             Gestão Operacional de Equipes
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Organização dos postos por frentes de trabalho, composição e lotação
+            Organização dos postos por frentes de trabalho, composição e fotos dos operadores
           </p>
         </div>
 
@@ -123,7 +123,7 @@ export const TeamsManagement: React.FC<TeamsManagementProps> = ({
           <Button
             size="sm"
             onClick={onNovaEquipeClick}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1.5 shadow-md"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1.5 shadow-md rounded-xl"
           >
             <Plus className="w-4 h-4" />
             Nova Equipe
@@ -138,7 +138,7 @@ export const TeamsManagement: React.FC<TeamsManagementProps> = ({
             placeholder="Buscar equipe ou colaborador integrante..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9 text-xs bg-background/50 border-border/60"
+            className="pl-9 h-9 text-xs bg-background/50 border-border/60 rounded-xl"
           />
         </div>
 
@@ -169,7 +169,7 @@ export const TeamsManagement: React.FC<TeamsManagementProps> = ({
               <Card
                 key={eq.id}
                 className={cn(
-                  'border transition-all duration-200 overflow-hidden',
+                  'border transition-all duration-200 overflow-hidden rounded-3xl',
                   isIncompleta ? 'border-amber-500/30 bg-card/70' : 'border-border/60 bg-card/40'
                 )}
               >
@@ -199,60 +199,75 @@ export const TeamsManagement: React.FC<TeamsManagementProps> = ({
                         {eq.veiculoPrefixo}
                       </span>
                       <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                        {regionalLabel[eq.regional]}
+                        <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                        {eq.regional === 'ribas' ? 'Ribas' : 'Água Clara'}
                       </span>
                     </div>
                   </div>
 
+                  {/* Fotos dos membros em pilha destacada */}
                   <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className="text-xs font-bold text-foreground">
-                        {eq.presentes}/{eq.totalMembros}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">operadores</p>
+                    <div className="flex -space-x-3 overflow-hidden p-1">
+                      {eq.membros.map((m) => (
+                        <div
+                          key={m.id}
+                          className={cn(
+                            'w-10 h-10 rounded-xl overflow-hidden border-2 shadow-md ring-2 shrink-0 bg-muted flex items-center justify-center',
+                            m.status === 'falta' ? 'border-rose-500 ring-rose-500/40' : 'border-emerald-500 ring-emerald-500/40'
+                          )}
+                          title={`${m.nome} (${m.cargo})`}
+                        >
+                          {m.foto ? (
+                            <img src={m.foto} alt={m.nome} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xs font-bold text-emerald-300">{getIniciais(m.nome)}</span>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                    )}
+
+                    <div className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted">
+                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </div>
                   </div>
                 </div>
 
                 {isExpanded && (
-                  <div className="p-4 pt-0 border-t border-border/40 mt-2 space-y-2.5">
-                    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider pt-2">
-                      Integrantes Alocados ({eq.membros.length})
-                    </p>
-                    {eq.membros.map((m) => (
-                      <div
-                        key={m.id}
-                        className="flex items-center justify-between p-2 rounded-xl bg-background/50 border border-border/40 text-xs"
-                      >
-                        <div>
-                          <p className="font-semibold text-foreground">{m.nome}</p>
-                          <p className="text-[10px] text-muted-foreground">{m.cargo}</p>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'text-[10px] py-0 px-2 font-semibold',
-                            m.status === 'presente'
-                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                              : m.status === 'falta'
-                              ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
-                              : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                          )}
+                  <div className="p-4 pt-0 border-t border-border/40 mt-2 space-y-3 bg-muted/10">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block pt-3">
+                      Integrantes da Equipe
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {eq.membros.map((m) => (
+                        <div
+                          key={m.id}
+                          className="flex items-center gap-3 p-3 rounded-2xl border border-border/60 bg-card/60"
                         >
-                          {m.status === 'presente'
-                            ? 'Presente'
-                            : m.status === 'falta'
-                            ? 'Falta'
-                            : 'Substituto'}
-                        </Badge>
-                      </div>
-                    ))}
+                          <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-emerald-500/60 ring-2 ring-emerald-500/20 shadow-sm shrink-0 bg-muted flex items-center justify-center">
+                            {m.foto ? (
+                              <img src={m.foto} alt={m.nome} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-black text-emerald-300">{getIniciais(m.nome)}</span>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h6 className="text-xs font-bold text-foreground truncate">{m.nome}</h6>
+                            <p className="text-[11px] text-muted-foreground truncate">{m.cargo}</p>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'text-[9px] py-0 px-1.5 mt-1',
+                                m.status === 'falta'
+                                  ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                                  : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                              )}
+                            >
+                              {m.status === 'falta' ? 'Falta' : 'Presente'}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </Card>

@@ -14,7 +14,7 @@ export interface Colaborador {
   id: string;
   nome: string;
   cargo: string;
-  matricula: string;
+  matricula?: string;
   foto: string;
   telefone: string;
   status: StatusPresenca;
@@ -25,6 +25,8 @@ export interface Colaborador {
   equipeId: string;
   equipeNumero: 1 | 2;
   posicaoVeiculo: 'motorista' | 'frente_dir' | 'tras_esq' | 'tras_dir';
+  unidade?: string;
+  dataAdmissao?: string;
 }
 
 export interface Equipe {

@@ -1,7 +1,7 @@
 {
   "projectName": "meu-projeto",
   "framework": "React 18 + TypeScript + Vite + Tailwind CSS",
-  "updatedAt": 1792335344068,
+  "updatedAt": 1792751383701,
   "domain": {
     "title": "Controle de Faltas",
     "tagline": "",
@@ -36,7 +36,9 @@
       "imports": [
         "src/components/ui/button.tsx",
         "src/components/ui/badge.tsx",
-        "src/types/index.ts"
+        "src/components/ui/input.tsx",
+        "src/types/index.ts",
+        "src/lib/utils.ts"
       ],
       "importedBy": [
         "src/components/VehicleCardGrid.tsx"
@@ -80,8 +82,8 @@
         "src/components/ui/card.tsx",
         "src/components/ui/button.tsx",
         "src/components/ui/badge.tsx",
-        "src/types/index.ts",
-        "src/lib/utils.ts"
+        "src/lib/utils.ts",
+        "src/types/index.ts"
       ],
       "importedBy": [
         "src/App.tsx"
@@ -121,9 +123,9 @@
       "relPath": "src/components/NewTeamModal.tsx",
       "name": "NewTeamModal",
       "imports": [
+        "src/types/index.ts",
         "src/components/ui/button.tsx",
-        "src/components/ui/input.tsx",
-        "src/types/index.ts"
+        "src/components/ui/input.tsx"
       ],
       "importedBy": [
         "src/App.tsx"
@@ -177,7 +179,8 @@
         "src/components/ExportReports.tsx",
         "src/components/MetricsHeader.tsx",
         "src/components/NewTeamModal.tsx",
-        "src/components/TeamsManagement.tsx"
+        "src/components/TeamsManagement.tsx",
+        "src/components/VehicleCardGrid.tsx"
       ],
       "description": "Componente base de UI reutilizável (button)",
       "isUiBase": true
@@ -204,6 +207,7 @@
         "src/lib/utils.ts"
       ],
       "importedBy": [
+        "src/components/AttendanceModal.tsx",
         "src/components/CollaboratorsManagement.tsx",
         "src/components/NewTeamModal.tsx",
         "src/components/TeamsManagement.tsx"
@@ -216,9 +220,10 @@
       "name": "VehicleCardGrid",
       "imports": [
         "src/types/index.ts",
+        "src/components/AttendanceModal.tsx",
         "src/components/ui/card.tsx",
         "src/components/ui/badge.tsx",
-        "src/components/AttendanceModal.tsx",
+        "src/components/ui/button.tsx",
         "src/lib/utils.ts"
       ],
       "importedBy": [
@@ -274,6 +279,7 @@
       "name": "utils",
       "imports": [],
       "importedBy": [
+        "src/components/AttendanceModal.tsx",
         "src/components/CollaboratorsManagement.tsx",
         "src/components/ExportReports.tsx",
         "src/components/MetricsHeader.tsx",

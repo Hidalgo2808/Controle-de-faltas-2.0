@@ -33,30 +33,15 @@ ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS veiculo_prefix
 ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS veiculoPlaca TEXT;
 ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS veiculo_placa TEXT;
 ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS regional TEXT;
+ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS unidade TEXT;
+ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS dataAdmissao TEXT;
+ALTER TABLE public.colaborador_completos ADD COLUMN IF NOT EXISTS data_admissao TEXT;
 CREATE INDEX IF NOT EXISTS idx_colaborador_completos_status ON public.colaborador_completos (status);
 CREATE INDEX IF NOT EXISTS idx_colaborador_completos_equipe_id ON public.colaborador_completos (equipe_id);
 ALTER TABLE public.colaborador_completos ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Permissao total anon/auth em colaborador_completos" ON public.colaborador_completos;
 CREATE POLICY "Permissao total anon/auth em colaborador_completos" ON public.colaborador_completos FOR ALL TO public USING (true) WITH CHECK (true);
 GRANT ALL ON TABLE public.colaborador_completos TO anon, authenticated, postgres, service_role;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, postgres, service_role;
-
--- ── Tabela: registro_importados ───────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.registro_importados (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
-ALTER TABLE public.registro_importados ADD COLUMN IF NOT EXISTS nome TEXT;
-ALTER TABLE public.registro_importados ADD COLUMN IF NOT EXISTS cargo TEXT;
-ALTER TABLE public.registro_importados ADD COLUMN IF NOT EXISTS unidade TEXT;
-ALTER TABLE public.registro_importados ADD COLUMN IF NOT EXISTS matricula TEXT;
-ALTER TABLE public.registro_importados ADD COLUMN IF NOT EXISTS telefone TEXT;
-ALTER TABLE public.registro_importados ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Permissao total anon/auth em registro_importados" ON public.registro_importados;
-CREATE POLICY "Permissao total anon/auth em registro_importados" ON public.registro_importados FOR ALL TO public USING (true) WITH CHECK (true);
-GRANT ALL ON TABLE public.registro_importados TO anon, authenticated, postgres, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, postgres, service_role;
 
 -- ── Tabela: colaboradores_reservas ───────────────────────────────────
@@ -142,6 +127,9 @@ ALTER TABLE public.colaboradores ADD COLUMN IF NOT EXISTS equipeNumero TEXT;
 ALTER TABLE public.colaboradores ADD COLUMN IF NOT EXISTS equipe_numero TEXT;
 ALTER TABLE public.colaboradores ADD COLUMN IF NOT EXISTS posicaoVeiculo TEXT;
 ALTER TABLE public.colaboradores ADD COLUMN IF NOT EXISTS posicao_veiculo TEXT;
+ALTER TABLE public.colaboradores ADD COLUMN IF NOT EXISTS unidade TEXT;
+ALTER TABLE public.colaboradores ADD COLUMN IF NOT EXISTS dataAdmissao TEXT;
+ALTER TABLE public.colaboradores ADD COLUMN IF NOT EXISTS data_admissao TEXT;
 CREATE INDEX IF NOT EXISTS idx_colaboradores_status ON public.colaboradores (status);
 CREATE INDEX IF NOT EXISTS idx_colaboradores_substituto_id ON public.colaboradores (substituto_id);
 CREATE INDEX IF NOT EXISTS idx_colaboradores_equipe_id ON public.colaboradores (equipe_id);

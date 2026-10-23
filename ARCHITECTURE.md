@@ -1,6 +1,6 @@
 # 🗺️ Mapa de Arquitetura e Estrutura — Controle de Faltas
 
-> **Sincronizado automaticamente pelo Code In Engine** em `2026-10-18 14:55:44`
+> **Sincronizado automaticamente pelo Code In Engine** em `2026-10-23 10:29:43`
 > Este documento é a referência viva e em tempo real da arquitetura, componentes e entidades de negócio do projeto.
 
 ---
@@ -54,7 +54,7 @@
 ### 📦 Componentes da Aplicação (Seções e Features):
 - **`src/components/AttendanceModal.tsx`** (AttendanceModal): Modal/Dialog interativo (AttendanceModal)
   - *Importado por*: `src/components/VehicleCardGrid.tsx`
-  - *Sub-componentes*: `src/components/ui/button.tsx`, `src/components/ui/badge.tsx`, `src/types/index.ts`
+  - *Sub-componentes*: `src/components/ui/button.tsx`, `src/components/ui/badge.tsx`, `src/components/ui/input.tsx`, `src/types/index.ts`, `src/lib/utils.ts`
 
 - **`src/components/CollaboratorsManagement.tsx`** (CollaboratorsManagement): Componente React modular (CollaboratorsManagement)
   - *Importado por*: `src/App.tsx`
@@ -66,7 +66,7 @@
 
 - **`src/components/ExportReports.tsx`** (ExportReports): Componente React modular (ExportReports)
   - *Importado por*: `src/App.tsx`
-  - *Sub-componentes*: `src/components/ui/card.tsx`, `src/components/ui/button.tsx`, `src/components/ui/badge.tsx`, `src/types/index.ts`, `src/lib/utils.ts`
+  - *Sub-componentes*: `src/components/ui/card.tsx`, `src/components/ui/button.tsx`, `src/components/ui/badge.tsx`, `src/lib/utils.ts`, `src/types/index.ts`
 
 - **`src/components/MetricsHeader.tsx`** (MetricsHeader): Cabeçalho e barra de navegação global com links e ações
   - *Importado por*: `src/App.tsx`
@@ -78,7 +78,7 @@
 
 - **`src/components/NewTeamModal.tsx`** (NewTeamModal): Modal/Dialog interativo (NewTeamModal)
   - *Importado por*: `src/App.tsx`
-  - *Sub-componentes*: `src/components/ui/button.tsx`, `src/components/ui/input.tsx`, `src/types/index.ts`
+  - *Sub-componentes*: `src/types/index.ts`, `src/components/ui/button.tsx`, `src/components/ui/input.tsx`
 
 - **`src/components/TeamsManagement.tsx`** (TeamsManagement): Componente React modular (TeamsManagement)
   - *Importado por*: `src/App.tsx`
@@ -86,7 +86,7 @@
 
 - **`src/components/VehicleCardGrid.tsx`** (VehicleCardGrid): Grid/Catálogo interativo de produtos com filtros e cards
   - *Importado por*: `src/App.tsx`
-  - *Sub-componentes*: `src/types/index.ts`, `src/components/ui/card.tsx`, `src/components/ui/badge.tsx`, `src/components/AttendanceModal.tsx`, `src/lib/utils.ts`
+  - *Sub-componentes*: `src/types/index.ts`, `src/components/AttendanceModal.tsx`, `src/components/ui/card.tsx`, `src/components/ui/badge.tsx`, `src/components/ui/button.tsx`, `src/lib/utils.ts`
 
 - **`src/components/VehicleTopView.tsx`** (VehicleTopView): Componente React modular (VehicleTopView)
   - *Importado por*: `src/components/ComponentShowcase.tsx`

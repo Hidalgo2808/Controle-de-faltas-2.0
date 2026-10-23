@@ -1,21 +1,32 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, UserX, ArrowRightLeft, ShieldAlert, FileText, User } from 'lucide-react';
+import {
+  X,
+  CheckCircle2,
+  AlertTriangle,
+  UserCheck,
+  UserX,
+  Phone,
+  Shield,
+  Search,
+  User,
+  Info,
+} from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { Input } from './ui/input';
 import { Colaborador, StatusPresenca, MotivoFalta } from '../types';
+import { cn } from '@/lib/utils';
 
 export interface AttendanceModalProps {
   isOpen: boolean;
-  onClose: () => void;
   colaborador: Colaborador;
-  veiculoPrefixo?: string;
   colaboradoresReserva?: Colaborador[];
+  onClose: () => void;
   onSave: (
-    novoStatus: StatusPresenca,
-    motivoFalta?: MotivoFalta,
+    status: StatusPresenca,
+    motivo?: MotivoFalta,
     observacao?: string,
-    substitutoId?: string,
-    substitutoNome?: string
+    substitutoId?: string
   ) => void;
 }
 
@@ -28,187 +39,222 @@ const MOTIVOS_FALTA: MotivoFalta[] = [
   'Licença Especial',
 ];
 
+const getIniciais = (nome?: string) => {
+  if (!nome) return 'CO';
+  const partes = nome.trim().split(' ');
+  if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+  return (partes[0][0] + (partes[partes.length - 1]?.[0] || '')).toUpperCase();
+};
+
 export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   isOpen,
-  onClose,
   colaborador,
-  veiculoPrefixo,
   colaboradoresReserva = [],
+  onClose,
   onSave,
 }) => {
-  const [status, setStatus] = useState<StatusPresenca>(colaborador.status || 'presente');
-  const [motivoFalta, setMotivoFalta] = useState<MotivoFalta | undefined>(colaborador.motivoFalta);
-  const [observacao, setObservacao] = useState<string>(colaborador.observacao || '');
-  const [substitutoId, setSubstitutoId] = useState<string>(colaborador.substitutoId || '');
+  const [status, setStatus] = useState<StatusPresenca>(colaborador?.status || 'presente');
+  const [motivo, setMotivo] = useState<MotivoFalta | undefined>(colaborador?.motivoFalta);
+  const [observacao, setObservacao] = useState(colaborador?.observacao || '');
+  const [substitutoId, setSubstitutoId] = useState<string>(colaborador?.substitutoId || '');
+  const [buscaSubstituto, setBuscaSubstituto] = useState('');
 
-  if (!isOpen) return null;
+  if (!isOpen || !colaborador) return null;
+
+  const substitutosFiltrados = (colaboradoresReserva || []).filter((sub) => {
+    if (!sub || sub.id === colaborador.id) return false;
+    if (!buscaSubstituto) return true;
+    return (
+      (sub.nome || '').toLowerCase().includes(buscaSubstituto.toLowerCase()) ||
+      (sub.cargo || '').toLowerCase().includes(buscaSubstituto.toLowerCase())
+    );
+  });
 
   const handleSalvar = () => {
-    let substitutoNome: string | undefined = undefined;
-    if (status === 'substituto' && substitutoId) {
-      const sub = colaboradoresReserva.find((c) => c.id === substitutoId);
-      substitutoNome = sub ? sub.nome : undefined;
-    }
-
     onSave(
       status,
-      status === 'falta' ? motivoFalta : undefined,
-      observacao,
-      status === 'substituto' ? substitutoId : undefined,
-      substitutoNome
+      status === 'falta' ? motivo : undefined,
+      observacao.trim() || undefined,
+      status === 'substituto' ? substitutoId : undefined
     );
     onClose();
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-150"
-      onClick={onClose}
-    >
-      <div
-        className="relative w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-muted/20">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg rounded-2xl border border-border/80 bg-card p-6 shadow-2xl space-y-5">
+        {/* Cabeçalho do Modal */}
+        <div className="flex items-center justify-between border-b border-border/50 pb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary font-bold">
-              <User className="w-5 h-5" />
+            {/* Foto Ampliada no Header do Modal */}
+            <div className="w-14 h-14 rounded-2xl border-2 border-emerald-500/40 overflow-hidden shrink-0 shadow-md flex items-center justify-center bg-muted/40">
+              {colaborador.foto ? (
+                <img
+                  src={colaborador.foto}
+                  alt={colaborador.nome}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="font-black text-foreground text-lg">
+                  {getIniciais(colaborador.nome)}
+                </span>
+              )}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-foreground">{colaborador.nome}</h2>
-                {veiculoPrefixo && (
-                  <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-border">
-                    {veiculoPrefixo}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">{colaborador.cargo} • Matrícula {colaborador.matricula}</p>
+              <h3 className="font-bold text-base text-foreground">{colaborador.nome}</h3>
+              <p className="text-xs text-muted-foreground">{colaborador.cargo}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            className="rounded-lg p-1 text-muted-foreground hover:bg-muted"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
-              Status de Presença
-            </label>
-            <div className="grid grid-cols-3 gap-2.5">
-              <button
-                type="button"
-                onClick={() => setStatus('presente')}
-                className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
-                  status === 'presente'
-                    ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-400 ring-2 ring-emerald-500/20'
-                    : 'border-border/60 text-muted-foreground hover:bg-muted/40'
-                }`}
-              >
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                Presente
-              </button>
+        {/* Seleção de Status */}
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-foreground">Status Operacional</label>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => setStatus('presente')}
+              className={cn(
+                'flex flex-col items-center justify-center py-3 px-2 rounded-xl border text-xs font-bold transition-all',
+                status === 'presente'
+                  ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400 ring-2 ring-emerald-500/20'
+                  : 'border-border/60 text-muted-foreground hover:bg-muted/40'
+              )}
+            >
+              <CheckCircle2 className="w-5 h-5 mb-1" />
+              <span>Presente</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setStatus('falta')}
-                className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
-                  status === 'falta'
-                    ? 'bg-rose-500/15 border-rose-500/50 text-rose-400 ring-2 ring-rose-500/20'
-                    : 'border-border/60 text-muted-foreground hover:bg-muted/40'
-                }`}
-              >
-                <UserX className="w-5 h-5 text-rose-400" />
-                Falta
-              </button>
+            <button
+              type="button"
+              onClick={() => setStatus('falta')}
+              className={cn(
+                'flex flex-col items-center justify-center py-3 px-2 rounded-xl border text-xs font-bold transition-all',
+                status === 'falta'
+                  ? 'border-rose-500 bg-rose-500/15 text-rose-400 ring-2 ring-rose-500/20'
+                  : 'border-border/60 text-muted-foreground hover:bg-muted/40'
+              )}
+            >
+              <UserX className="w-5 h-5 mb-1" />
+              <span>Falta</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setStatus('substituto')}
-                className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
-                  status === 'substituto'
-                    ? 'bg-amber-500/15 border-amber-500/50 text-amber-400 ring-2 ring-amber-500/20'
-                    : 'border-border/60 text-muted-foreground hover:bg-muted/40'
-                }`}
-              >
-                <ArrowRightLeft className="w-5 h-5 text-amber-400" />
-                Substituto
-              </button>
-            </div>
-          </div>
-
-          {status === 'falta' && (
-            <div className="p-4 rounded-2xl border border-rose-500/30 bg-rose-500/5 space-y-3">
-              <div className="flex items-center gap-2 text-rose-400 text-xs font-semibold">
-                <ShieldAlert className="w-4 h-4" />
-                <span>Classificação do Motivo da Falta</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {MOTIVOS_FALTA.map((motivo) => (
-                  <button
-                    key={motivo}
-                    type="button"
-                    onClick={() => setMotivoFalta(motivo)}
-                    className={`text-left p-2.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
-                      motivoFalta === motivo
-                        ? 'bg-rose-500/20 border-rose-500/60 text-rose-300 font-bold'
-                        : 'border-border/60 text-muted-foreground hover:bg-muted/30'
-                    }`}
-                  >
-                    {motivo}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {status === 'substituto' && (
-            <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 space-y-2">
-              <label className="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
-                <ArrowRightLeft className="w-3.5 h-3.5" />
-                Selecione o Colaborador Reserva
-              </label>
-              <select
-                value={substitutoId}
-                onChange={(e) => setSubstitutoId(e.target.value)}
-                className="w-full h-10 rounded-xl border border-border bg-card px-3 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/40"
-              >
-                <option value="">Selecione um reserva disponível...</option>
-                {colaboradoresReserva.map((res) => (
-                  <option key={res.id} value={res.id}>
-                    {res.nome} ({res.cargo})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5" />
-              Observação Operacional (Opcional)
-            </label>
-            <textarea
-              rows={2}
-              value={observacao}
-              onChange={(e) => setObservacao(e.target.value)}
-              placeholder="Descreva detalhes como horário de contato, número de CID, etc."
-              className="w-full rounded-xl border border-input bg-card/60 p-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
-            />
+            <button
+              type="button"
+              onClick={() => setStatus('substituto')}
+              className={cn(
+                'flex flex-col items-center justify-center py-3 px-2 rounded-xl border text-xs font-bold transition-all',
+                status === 'substituto'
+                  ? 'border-amber-500 bg-amber-500/15 text-amber-400 ring-2 ring-amber-500/20'
+                  : 'border-border/60 text-muted-foreground hover:bg-muted/40'
+              )}
+            >
+              <UserCheck className="w-5 h-5 mb-1" />
+              <span>Substituto</span>
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-muted/20">
+        {/* Opções de Falta */}
+        {status === 'falta' && (
+          <div className="space-y-2 animate-in fade-in">
+            <label className="text-xs font-semibold text-foreground">Motivo da Ausência</label>
+            <select
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value as MotivoFalta)}
+              className="w-full h-10 px-3 rounded-xl border border-input bg-card text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-rose-500/30"
+            >
+              <option value="">Selecione o motivo...</option>
+              {MOTIVOS_FALTA.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Seleção de Substituto */}
+        {status === 'substituto' && (
+          <div className="space-y-3 animate-in fade-in">
+            <label className="text-xs font-semibold text-foreground">Selecione o Colaborador Substituto</label>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Filtrar operador por nome ou cargo..."
+                value={buscaSubstituto}
+                onChange={(e) => setBuscaSubstituto(e.target.value)}
+                className="pl-9 h-9 text-xs"
+              />
+            </div>
+
+            <div className="max-h-48 overflow-y-auto space-y-1.5 rounded-xl border border-border p-2 bg-muted/20">
+              {substitutosFiltrados.length === 0 ? (
+                <p className="text-center text-xs text-muted-foreground py-3">Nenhum operador reserva disponível.</p>
+              ) : (
+                substitutosFiltrados.map((sub) => (
+                  <div
+                    key={sub.id}
+                    onClick={() => setSubstitutoId(sub.id)}
+                    className={cn(
+                      'flex items-center justify-between p-2 rounded-xl border cursor-pointer transition-all',
+                      substitutoId === sub.id
+                        ? 'border-amber-500 bg-amber-500/15 text-foreground ring-1 ring-amber-500/30'
+                        : 'border-border/50 hover:bg-card text-muted-foreground'
+                    )}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl border overflow-hidden shrink-0 flex items-center justify-center bg-muted/40 font-bold text-xs text-foreground">
+                        {sub.foto ? (
+                          <img src={sub.foto} alt={sub.nome} className="w-full h-full object-cover" />
+                        ) : (
+                          getIniciais(sub.nome)
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs text-foreground">{sub.nome}</p>
+                        <p className="text-[10px] text-muted-foreground">{sub.cargo}</p>
+                      </div>
+                    </div>
+                    {substitutoId === sub.id && (
+                      <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Observações */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-foreground">Observações / Detalhes</label>
+          <Input
+            placeholder="Ex: Atestado entregue ao RH, retorno previsto para amanhã..."
+            value={observacao}
+            onChange={(e) => setObservacao(e.target.value)}
+            className="text-xs h-10"
+          />
+        </div>
+
+        {/* Rodapé de Ações */}
+        <div className="pt-2 flex justify-end gap-2 border-t border-border/50">
           <Button type="button" variant="outline" onClick={onClose} className="rounded-xl">
             Cancelar
           </Button>
-          <Button type="button" onClick={handleSalvar} className="rounded-xl px-5 font-bold">
-            Salvar Status
+          <Button
+            type="button"
+            onClick={handleSalvar}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl"
+          >
+            Confirmar Registro
           </Button>
         </div>
       </div>

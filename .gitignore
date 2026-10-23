@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-electron
+.env
+.env.local
+.env.*.local
+.codein
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.vite
