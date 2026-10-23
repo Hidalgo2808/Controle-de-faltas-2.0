@@ -1,6 +1,6 @@
 # 🗺️ Mapa de Arquitetura e Estrutura — Controle de Faltas
 
-> **Sincronizado automaticamente pelo Code In Engine** em `2026-10-23 10:29:43`
+> **Sincronizado automaticamente pelo Code In Engine** em `2026-10-23 11:28:32`
 > Este documento é a referência viva e em tempo real da arquitetura, componentes e entidades de negócio do projeto.
 
 ---
