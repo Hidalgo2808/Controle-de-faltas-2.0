@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Users, UsersRound, TrendingUp, PlusCircle } from 'lucide-react';
+import { Users, UsersRound, PlusCircle, ShieldCheck } from 'lucide-react';
 import { Veiculo, MetricasGerais, Regional } from '../types';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
@@ -60,166 +60,124 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
   }, [veiculosSeguros, activePanel]);
 
   const dadosAtivos = useMemo(() => calcularEquipes(veiculosFiltrados), [veiculosFiltrados]);
-  const { equipesCom2, equipesCom3, totalEquipes } = dadosAtivos;
+  const { equipesCom2, equipesCom3, totalEquipes, totalVeiculos } = dadosAtivos;
 
   const panelButtons = [
     {
       key: 'todas' as const,
-      label: 'Geral',
-      activeColor: 'bg-primary text-primary-foreground border-primary/50',
-      dot: 'bg-primary',
+      label: 'Geral Consolidado',
       count: veiculosSeguros.length,
     },
     {
       key: 'ribas' as const,
-      label: 'Ribas',
-      activeColor: 'bg-emerald-600 text-white border-emerald-500/50',
-      dot: 'bg-emerald-400',
+      label: 'Ribas do Rio Pardo',
       count: veiculosSeguros.filter((v) => v?.regional === 'ribas').length,
     },
     {
       key: 'agua_clara' as const,
       label: 'Água Clara',
-      activeColor: 'bg-teal-600 text-white border-teal-500/50',
-      dot: 'bg-teal-400',
       count: veiculosSeguros.filter((v) => v?.regional === 'agua_clara').length,
     },
   ];
 
-  const regionalColor = {
-    todas: {
-      badge: 'bg-primary/10 border-primary/25 text-primary',
-      dot: 'bg-primary',
-    },
-    ribas: {
-      badge: 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400',
-      dot: 'bg-emerald-400',
-    },
-    agua_clara: {
-      badge: 'bg-teal-500/10 border-teal-500/25 text-teal-400',
-      dot: 'bg-teal-400',
-    },
-  };
-
-  const colors = regionalColor[activePanel] || regionalColor.todas;
-  const activePanelInfo = panelButtons.find((b) => b.key === activePanel);
-
-  const cards = [
-    {
-      key: '2',
-      label: 'Duplas Operacionais',
-      descricao: '2 operadores ativos',
-      total: equipesCom2,
-      icon: <Users className="w-5 h-5 text-emerald-400" />,
-      numColor: 'text-emerald-300',
-      iconBg: 'bg-emerald-500/15 border-emerald-500/30',
-      borderColor: 'border-emerald-500/25',
-      gradientBg: 'from-emerald-500/8 to-transparent',
-    },
-    {
-      key: '3',
-      label: 'Trios / Postos Cheios',
-      descricao: '3+ operadores ativos',
-      total: equipesCom3,
-      icon: <UsersRound className="w-5 h-5 text-teal-400" />,
-      numColor: 'text-teal-300',
-      iconBg: 'bg-teal-500/15 border-teal-500/30',
-      borderColor: 'border-teal-500/25',
-      gradientBg: 'from-teal-500/8 to-transparent',
-    },
-  ];
-
   return (
-    <div className="w-full space-y-3">
-      <div className="w-full rounded-2xl border border-border/50 bg-card/70 backdrop-blur-md shadow-xl overflow-hidden">
-        <div className="px-5 pt-4 pb-3 border-b border-border/40 bg-gradient-to-r from-muted/30 to-muted/10 space-y-3">
-          <div className="flex items-center gap-2.5 flex-wrap justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-3.5 h-3.5 text-primary" />
-              </div>
-              <span className="text-sm font-bold text-foreground">Composição de Equipes</span>
-              <div
-                className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold',
-                  colors.badge
-                )}
-              >
-                <span className={cn('w-1.5 h-1.5 rounded-full', colors.dot)} />
-                <span>{activePanelInfo?.label ?? 'Geral'}</span>
-                <span className="opacity-60">·</span>
-                <span className="tabular-nums">{totalEquipes} equipes</span>
-              </div>
-            </div>
-
-            {onNovaEquipe && (
-              <Button
-                type="button"
-                onClick={onNovaEquipe}
-                size="sm"
-                className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>Nova Equipe</span>
-              </Button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {panelButtons.map((btn) => (
-              <button
-                key={btn.key}
-                type="button"
-                onClick={() => handlePanelChange(btn.key)}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer',
-                  activePanel === btn.key
-                    ? btn.activeColor + ' shadow-sm'
-                    : 'border-border/50 text-muted-foreground hover:border-border hover:bg-muted/40'
-                )}
-              >
-                <span className={cn('w-1.5 h-1.5 rounded-full', btn.dot)} />
-                {btn.label}
-                <span
-                  className={cn(
-                    'ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums',
-                    activePanel === btn.key ? 'bg-white/20' : 'bg-muted text-muted-foreground'
-                  )}
-                >
-                  {btn.count}
-                </span>
-              </button>
-            ))}
-          </div>
+    <div className="w-full space-y-4">
+      {/* Barra de Filtros e Criação de Nova Equipe */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-xl border border-emerald-900/10 bg-white shadow-sm">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {panelButtons.map((btn) => (
+            <button
+              key={btn.key}
+              type="button"
+              onClick={() => handlePanelChange(btn.key)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer',
+                activePanel === btn.key
+                  ? 'bg-emerald-600 text-white font-semibold shadow-sm shadow-emerald-700/20'
+                  : 'text-emerald-950/70 hover:text-emerald-950 hover:bg-emerald-50'
+              )}
+            >
+              <span>{btn.label}</span>
+              <span className={cn(
+                "px-1.5 py-0.2 rounded text-[10px] font-mono tabular-nums",
+                activePanel === btn.key ? "bg-white/20 text-white font-bold" : "bg-emerald-100 text-emerald-800"
+              )}>
+                {btn.count}
+              </span>
+            </button>
+          ))}
         </div>
 
-        <div className="p-4 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {cards.map((card) => (
-              <div
-                key={card.key}
-                className={cn(
-                  'relative rounded-xl border p-4 bg-gradient-to-br overflow-hidden',
-                  card.borderColor,
-                  card.gradientBg
-                )}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className={cn('w-9 h-9 rounded-lg border flex items-center justify-center shrink-0', card.iconBg)}>
-                    {card.icon}
-                  </div>
-                  <div className="text-right">
-                    <p className={cn('text-3xl font-extrabold leading-none tabular-nums', card.numColor)}>{card.total}</p>
-                    <p className="text-[10px] text-muted-foreground mt-1">equipes</p>
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <p className="text-xs font-bold text-foreground">{card.label}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{card.descricao}</p>
-                </div>
-              </div>
-            ))}
+        {onNovaEquipe && (
+          <Button
+            type="button"
+            onClick={onNovaEquipe}
+            size="sm"
+            className="gap-2 bg-emerald-600 text-white font-semibold hover:bg-emerald-700 shadow-sm shadow-emerald-700/20"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>Nova Equipe</span>
+          </Button>
+        )}
+      </div>
+
+      {/* Grid com Cards de Resumo em Branco e Verde */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Card 1: Veículos em Campo */}
+        <div className="rounded-xl border border-emerald-900/10 bg-white p-4 shadow-sm hover:border-emerald-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-900/60">Veículos em Campo</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
           </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-bold tracking-tight text-emerald-950 tabular-nums">
+              {totalVeiculos}
+            </span>
+            <span className="text-xs text-emerald-900/60 font-medium">unidades ativas</span>
+          </div>
+          <p className="mt-1 text-[11px] text-emerald-900/70">
+            {totalEquipes} postos florestais monitorados
+          </p>
+        </div>
+
+        {/* Card 2: Duplas Operacionais */}
+        <div className="rounded-xl border border-emerald-900/10 bg-white p-4 shadow-sm hover:border-emerald-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-900/60">Duplas Operacionais</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-bold tracking-tight text-emerald-950 tabular-nums">
+              {equipesCom2}
+            </span>
+            <span className="text-xs text-emerald-900/60 font-medium">equipes</span>
+          </div>
+          <p className="mt-1 text-[11px] text-emerald-900/70">
+            2 operadores escalados no veículo
+          </p>
+        </div>
+
+        {/* Card 3: Trios / Postos Cheios */}
+        <div className="rounded-xl border border-emerald-900/10 bg-white p-4 shadow-sm hover:border-emerald-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-900/60">Trios / Postos Cheios</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+              <UsersRound className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-bold tracking-tight text-emerald-950 tabular-nums">
+              {equipesCom3}
+            </span>
+            <span className="text-xs text-emerald-900/60 font-medium">equipes</span>
+          </div>
+          <p className="mt-1 text-[11px] text-emerald-900/70">
+            3 ou mais operadores escalados
+          </p>
         </div>
       </div>
     </div>

@@ -1,249 +1,331 @@
 import React, { useState } from 'react';
-import { X, Users, Car, MapPin, Plus } from 'lucide-react';
-import { Colaborador, Regional } from '../types';
+import { X, Users, Car, Shield, Plus, Check } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Colaborador } from '../types';
 
 export interface NovaEquipePayload {
-  codigo: string;
+  prefixoVeiculo: string;
+  placaVeiculo: string;
+  modeloVeiculo: string;
+  anoVeiculo: number;
   regional: 'ribas' | 'agua_clara';
-  veiculoPrefixo: string;
-  veiculoPlaca: string;
-  veiculoModelo: string;
-  motorista: Colaborador;
-  frenteDir: Colaborador;
-  trasEsq?: Colaborador;
-  trasDir?: Colaborador;
+  nomeEquipe1: string;
+  nomeEquipe2: string;
+  colaboradoresEquipe1: Colaborador[];
+  colaboradoresEquipe2: Colaborador[];
+  prefixo?: string;
+  placa?: string;
+  modelo?: string;
+  ano?: number;
 }
 
 export interface NewTeamModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSave?: (payload: NovaEquipePayload) => void;
+  onConfirm?: (payload: NovaEquipePayload) => void;
   colaboradoresReserva?: Colaborador[];
-  onCriarEquipe?: (novaEquipe: NovaEquipePayload) => void;
+  regionalPadrao?: 'ribas' | 'agua_clara';
 }
 
 export const NewTeamModal: React.FC<NewTeamModalProps> = ({
   isOpen,
   onClose,
+  onSave,
+  onConfirm,
   colaboradoresReserva = [],
-  onCriarEquipe,
+  regionalPadrao = 'ribas',
 }) => {
-  const [codigoEquipe, setCodigoEquipe] = useState('');
-  const [regional, setRegional] = useState<'ribas' | 'agua_clara'>('ribas');
-  const [prefixo, setPrefixo] = useState('');
-  const [placa, setPlaca] = useState('');
-  const [modelo, setModelo] = useState('Toyota Hilux 4x4');
+  const [regional, setRegional] = useState<'ribas' | 'agua_clara'>(regionalPadrao);
+  const [prefixoVeiculo, setPrefixoVeiculo] = useState('');
+  const [placaVeiculo, setPlacaVeiculo] = useState('');
+  const [modeloVeiculo, setModeloVeiculo] = useState('Toyota Hilux 4x4');
+  const [anoVeiculo, setAnoVeiculo] = useState<number>(new Date().getFullYear());
 
-  const [motoristaId, setMotoristaId] = useState('');
-  const [frenteDirId, setFrenteDirId] = useState('');
-  const [trasEsqId, setTrasEsqId] = useState('');
-  const [trasDirId, setTrasDirId] = useState('');
+  const [nomeEquipe1, setNomeEquipe1] = useState('');
+  const [nomeEquipe2, setNomeEquipe2] = useState('');
+
+  // Operadores Equipe 1
+  const [motNome, setMotNome] = useState('');
+  const [motCargo, setMotCargo] = useState('Motorista Operacional');
+  const [frenteNome, setFrenteNome] = useState('');
+  const [frenteCargo, setFrenteCargo] = useState('Líder de Campo');
+
+  // Operadores Equipe 2
+  const [trasEsqNome, setTrasEsqNome] = useState('');
+  const [trasEsqCargo, setTrasEsqCargo] = useState('Operador Florestal');
+  const [trasDirNome, setTrasDirNome] = useState('');
+  const [trasDirCargo, setTrasDirCargo] = useState('Operador Florestal');
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!codigoEquipe.trim() || !prefixo.trim() || !placa.trim()) return;
 
-    const getColab = (id: string, defaultName: string): Colaborador => {
-      const found = colaboradoresReserva.find((c) => c.id === id);
-      if (found) return { ...found, equipeId: codigoEquipe, equipeNumero: 1 };
-      return {
-        id: id || `colab-${Date.now()}-${Math.random()}`,
-        nome: defaultName,
-        cargo: 'Operador Florestal',
-        foto: '',
-        telefone: '(67) 99999-0000',
-        status: 'presente',
-        equipeId: codigoEquipe,
-        equipeNumero: 1,
-        posicaoVeiculo: 'motorista',
-        unidade: regional === 'ribas' ? 'Ribas do Rio Pardo' : 'Água Clara',
-      };
+    const prefixoFinal = prefixoVeiculo.trim() || `VAN-${Math.floor(100 + Math.random() * 900)}`;
+    const eq1Cod = `EQ-${Math.floor(10 + Math.random() * 89)}A`;
+    const eq2Cod = `EQ-${Math.floor(10 + Math.random() * 89)}B`;
+
+    const colab1: Colaborador = {
+      id: `c-new-${Date.now()}-1`,
+      nome: motNome.trim() || 'Motorista Titular',
+      cargo: motCargo.trim() || 'Motorista Operacional',
+      foto: '',
+      telefone: '(67) 99999-0001',
+      status: 'presente',
+      equipeId: eq1Cod,
+      equipeNumero: 1,
+      posicaoVeiculo: 'motorista',
+      unidade: regional === 'ribas' ? 'Ribas do Rio Pardo' : 'Água Clara',
     };
 
-    const motorista = getColab(motoristaId, 'Motorista Operacional');
-    motorista.posicaoVeiculo = 'motorista';
+    const colab2: Colaborador = {
+      id: `c-new-${Date.now()}-2`,
+      nome: frenteNome.trim() || 'Operador Frente',
+      cargo: frenteCargo.trim() || 'Líder de Campo',
+      foto: '',
+      telefone: '(67) 99999-0002',
+      status: 'presente',
+      equipeId: eq1Cod,
+      equipeNumero: 1,
+      posicaoVeiculo: 'frente_dir',
+      unidade: regional === 'ribas' ? 'Ribas do Rio Pardo' : 'Água Clara',
+    };
 
-    const frenteDir = getColab(frenteDirId, 'Operador Dianteiro');
-    frenteDir.posicaoVeiculo = 'frente_dir';
+    const colab3: Colaborador = {
+      id: `c-new-${Date.now()}-3`,
+      nome: trasEsqNome.trim() || 'Operador Retaguarda 1',
+      cargo: trasEsqCargo.trim() || 'Operador Florestal',
+      foto: '',
+      telefone: '(67) 99999-0003',
+      status: 'presente',
+      equipeId: eq2Cod,
+      equipeNumero: 2,
+      posicaoVeiculo: 'tras_esq',
+      unidade: regional === 'ribas' ? 'Ribas do Rio Pardo' : 'Água Clara',
+    };
 
-    const trasEsq = trasEsqId ? getColab(trasEsqId, 'Operador Traseiro 1') : undefined;
-    if (trasEsq) trasEsq.posicaoVeiculo = 'tras_esq';
+    const colab4: Colaborador = {
+      id: `c-new-${Date.now()}-4`,
+      nome: trasDirNome.trim() || 'Operador Retaguarda 2',
+      cargo: trasDirCargo.trim() || 'Operador Florestal',
+      foto: '',
+      telefone: '(67) 99999-0004',
+      status: 'presente',
+      equipeId: eq2Cod,
+      equipeNumero: 2,
+      posicaoVeiculo: 'tras_dir',
+      unidade: regional === 'ribas' ? 'Ribas do Rio Pardo' : 'Água Clara',
+    };
 
-    const trasDir = trasDirId ? getColab(trasDirId, 'Operador Traseiro 2') : undefined;
-    if (trasDir) trasDir.posicaoVeiculo = 'tras_dir';
-
-    onCriarEquipe?.({
-      codigo: codigoEquipe.trim(),
+    const payload: NovaEquipePayload = {
+      prefixoVeiculo: prefixoFinal,
+      placaVeiculo: placaVeiculo.trim().toUpperCase() || 'BRA2E19',
+      modeloVeiculo: modeloVeiculo.trim() || 'Toyota Hilux 4x4',
+      anoVeiculo: Number(anoVeiculo) || new Date().getFullYear(),
       regional,
-      veiculoPrefixo: prefixo.trim(),
-      veiculoPlaca: placa.trim().toUpperCase(),
-      veiculoModelo: modelo.trim(),
-      motorista,
-      frenteDir,
-      trasEsq,
-      trasDir,
-    });
+      nomeEquipe1: nomeEquipe1.trim() || `Equipe Alfa (${prefixoFinal})`,
+      nomeEquipe2: nomeEquipe2.trim() || `Equipe Beta (${prefixoFinal})`,
+      colaboradoresEquipe1: [colab1, colab2],
+      colaboradoresEquipe2: [colab3, colab4],
+      prefixo: prefixoFinal,
+      placa: placaVeiculo.trim().toUpperCase() || 'BRA2E19',
+      modelo: modeloVeiculo.trim() || 'Toyota Hilux 4x4',
+      ano: Number(anoVeiculo) || new Date().getFullYear(),
+    };
+
+    if (onConfirm) {
+      onConfirm(payload);
+    } else if (onSave) {
+      onSave(payload);
+    }
 
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-2xl border border-border/80 bg-card p-6 shadow-2xl space-y-4">
-        <div className="flex items-center justify-between border-b border-border/50 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-              <Plus className="w-4 h-4 text-emerald-400" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-emerald-900/15 bg-white p-6 shadow-2xl space-y-6">
+        <div className="flex items-center justify-between border-b border-emerald-900/10 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-sm">
+              <Car className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-foreground">Cadastrar Nova Equipe</h3>
-              <p className="text-xs text-muted-foreground">Adicione um novo veículo e escale os operadores</p>
+              <h3 className="text-lg font-bold text-emerald-950 tracking-tight">Nova Equipe & Veículo</h3>
+              <p className="text-xs text-emerald-800/70">Cadastrar veículo e compor as duas equipes operacionais</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
+            className="rounded-lg p-1.5 text-emerald-900/50 hover:bg-emerald-50 hover:text-emerald-950 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-medium text-foreground mb-1">Código da Equipe</label>
-              <Input
-                placeholder="Ex: EQ-07 / FT-01"
-                value={codigoEquipe}
-                onChange={(e) => setCodigoEquipe(e.target.value)}
-                required
-              />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Dados do Veículo */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-emerald-950 uppercase tracking-wider">
+              <Shield className="w-4 h-4 text-emerald-600" />
+              <span>Identificação do Veículo</span>
             </div>
-            <div>
-              <label className="block font-medium text-foreground mb-1">Unidade Regional</label>
-              <select
-                value={regional}
-                onChange={(e) => setRegional(e.target.value as 'ribas' | 'agua_clara')}
-                className="w-full h-10 px-3 rounded-xl border border-input bg-card text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              >
-                <option value="ribas">Ribas do Rio Pardo</option>
-                <option value="agua_clara">Água Clara</option>
-              </select>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block font-medium text-foreground mb-1">Prefixo Veículo</label>
-              <Input
-                placeholder="Ex: V-108"
-                value={prefixo}
-                onChange={(e) => setPrefixo(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label className="block font-medium text-foreground mb-1">Placa</label>
-              <Input
-                placeholder="Ex: BRA2E19"
-                value={placa}
-                onChange={(e) => setPlaca(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label className="block font-medium text-foreground mb-1">Modelo</label>
-              <Input
-                placeholder="Ex: Hilux 4x4"
-                value={modelo}
-                onChange={(e) => setModelo(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="border-t border-border/40 pt-3 space-y-2">
-            <span className="font-semibold text-foreground flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-emerald-400" />
-              Escalar Operadores (Banco de Reserva)
-            </span>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] text-muted-foreground block mb-1">Motorista</label>
+                <label className="block text-xs font-semibold text-emerald-900/70 mb-1">Unidade Regional</label>
                 <select
-                  value={motoristaId}
-                  onChange={(e) => setMotoristaId(e.target.value)}
-                  className="w-full h-9 px-2 rounded-lg border border-input bg-card text-xs text-foreground"
+                  value={regional}
+                  onChange={(e) => setRegional(e.target.value as 'ribas' | 'agua_clara')}
+                  className="w-full h-10 px-3 rounded-xl border border-emerald-200 bg-white text-xs text-emerald-950 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 >
-                  <option value="">Selecione da Reserva ou Novo...</option>
-                  {colaboradoresReserva.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nome} ({c.cargo})
-                    </option>
-                  ))}
+                  <option value="ribas">Ribas do Rio Pardo - MS</option>
+                  <option value="agua_clara">Água Clara - MS</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-[11px] text-muted-foreground block mb-1">Ajudante (Frente Dir)</label>
-                <select
-                  value={frenteDirId}
-                  onChange={(e) => setFrenteDirId(e.target.value)}
-                  className="w-full h-9 px-2 rounded-lg border border-input bg-card text-xs text-foreground"
-                >
-                  <option value="">Selecione da Reserva ou Novo...</option>
-                  {colaboradoresReserva.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nome} ({c.cargo})
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-xs font-semibold text-emerald-900/70 mb-1">Prefixo do Veículo</label>
+                <Input
+                  placeholder="Ex: VAN-042 ou V-18"
+                  value={prefixoVeiculo}
+                  onChange={(e) => setPrefixoVeiculo(e.target.value)}
+                  className="h-10 text-xs bg-emerald-50/30 border-emerald-200 text-emerald-950 placeholder:text-emerald-900/40"
+                />
               </div>
 
               <div>
-                <label className="text-[11px] text-muted-foreground block mb-1">Operador Traseiro 1 (Opcional)</label>
-                <select
-                  value={trasEsqId}
-                  onChange={(e) => setTrasEsqId(e.target.value)}
-                  className="w-full h-9 px-2 rounded-lg border border-input bg-card text-xs text-foreground"
-                >
-                  <option value="">Nenhum / Posto Vazio</option>
-                  {colaboradoresReserva.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nome} ({c.cargo})
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-xs font-semibold text-emerald-900/70 mb-1">Placa</label>
+                <Input
+                  placeholder="Ex: RRP-4A20"
+                  value={placaVeiculo}
+                  onChange={(e) => setPlacaVeiculo(e.target.value)}
+                  className="h-10 text-xs uppercase bg-emerald-50/30 border-emerald-200 text-emerald-950 placeholder:text-emerald-900/40"
+                />
               </div>
 
               <div>
-                <label className="text-[11px] text-muted-foreground block mb-1">Operador Traseiro 2 (Opcional)</label>
-                <select
-                  value={trasDirId}
-                  onChange={(e) => setTrasDirId(e.target.value)}
-                  className="w-full h-9 px-2 rounded-lg border border-input bg-card text-xs text-foreground"
-                >
-                  <option value="">Nenhum / Posto Vazio</option>
-                  {colaboradoresReserva.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nome} ({c.cargo})
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-xs font-semibold text-emerald-900/70 mb-1">Modelo</label>
+                <Input
+                  placeholder="Ex: Toyota Hilux 4x4"
+                  value={modeloVeiculo}
+                  onChange={(e) => setModeloVeiculo(e.target.value)}
+                  className="h-10 text-xs bg-emerald-50/30 border-emerald-200 text-emerald-950 placeholder:text-emerald-900/40"
+                />
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-border/40">
-            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+          {/* Equipe 1 */}
+          <div className="space-y-3 pt-3 border-t border-emerald-900/10">
+            <div className="flex items-center gap-2 text-xs font-bold text-emerald-950 uppercase tracking-wider">
+              <Users className="w-4 h-4 text-emerald-600" />
+              <span>Equipe 1 (Motorista & Carona Frente)</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-emerald-900/70 mb-1">Nome do Motorista</label>
+                <Input
+                  placeholder="Nome completo..."
+                  value={motNome}
+                  onChange={(e) => setMotNome(e.target.value)}
+                  className="h-10 text-xs bg-emerald-50/30 border-emerald-200 text-emerald-950 placeholder:text-emerald-900/40"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-emerald-900/70 mb-1">Função / Cargo</label>
+                <Input
+                  value={motCargo}
+                  onChange={(e) => setMotCargo(e.target.value)}
+                  className="h-10 text-xs bg-emerald-50/30 border-emerald-200 text-emerald-950"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-emerald-900/70 mb-1">Operador Frente Direita</label>
+                <Input
+                  placeholder="Nome completo..."
+                  value={frenteNome}
+                  onChange={(e) => setFrenteNome(e.target.value)}
+                  className="h-10 text-xs bg-emerald-50/30 border-emerald-200 text-emerald-950 placeholder:text-emerald-900/40"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-emerald-900/70 mb-1">Função / Cargo</label>
+                <Input
+                  value={frenteCargo}
+                  onChange={(e) => setFrenteCargo(e.target.value)}
+                  className="h-10 text-xs bg-emerald-50/30 border-emerald-200 text-emerald-950"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Equipe 2 */}
+          <div className="space-y-3 pt-3 border-t border-emerald-900/10">
+            <div className="flex items-center gap-2 text-xs font-bold text-emerald-950 uppercase tracking-wider">
+              <Users className="w-4 h-4 text-emerald-600" />
+              <span>Equipe 2 (Retaguarda)</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-emerald-900/70 mb-1">Operador Traseiro Esquerdo</label>
+                <Input
+                  placeholder="Nome completo..."
+                  value={trasEsqNome}
+                  onChange={(e) => setTrasEsqNome(e.target.value)}
+                  className="h-10 text-xs bg-emerald-50/30 border-emerald-200 text-emerald-950 placeholder:text-emerald-900/40"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-emerald-900/70 mb-1">Função / Cargo</label>
+                <Input
+                  value={trasEsqCargo}
+                  onChange={(e) => setTrasEsqCargo(e.target.value)}
+                  className="h-10 text-xs bg-emerald-50/30 border-emerald-200 text-emerald-950"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-emerald-900/70 mb-1">Operador Traseiro Direito</label>
+                <Input
+                  placeholder="Nome completo..."
+                  value={trasDirNome}
+                  onChange={(e) => setTrasDirNome(e.target.value)}
+                  className="h-10 text-xs bg-emerald-50/30 border-emerald-200 text-emerald-950 placeholder:text-emerald-900/40"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-emerald-900/70 mb-1">Função / Cargo</label>
+                <Input
+                  value={trasDirCargo}
+                  onChange={(e) => setTrasDirCargo(e.target.value)}
+                  className="h-10 text-xs bg-emerald-50/30 border-emerald-200 text-emerald-950"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Botões de Ação */}
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-emerald-900/10">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="border-emerald-200 text-emerald-900 hover:bg-emerald-50"
+            >
               Cancelar
             </Button>
-            <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white">
-              Salvar Equipe
+            <Button
+              type="submit"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
+            >
+              Cadastrar Veículo & Equipe
             </Button>
           </div>
         </form>

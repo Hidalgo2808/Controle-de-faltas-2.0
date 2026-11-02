@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   Building2,
+  CalendarDays,
 } from 'lucide-react';
 import { Regional } from '../types';
 import { Badge } from './ui/badge';
@@ -27,32 +28,24 @@ const REGIONAIS: Array<{
   id: Regional;
   label: string;
   tag: string;
-  dotColor: string;
-  activeBg: string;
   description: string;
 }> = [
   {
     id: 'todas',
     label: 'Todas as Unidades',
     tag: 'Geral',
-    dotColor: 'bg-emerald-400',
-    activeBg: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
     description: 'Visão consolidada da operação florestal',
   },
   {
     id: 'ribas',
     label: 'Ribas do Rio Pardo',
     tag: 'RRP',
-    dotColor: 'bg-emerald-400',
-    activeBg: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
     description: 'Polo Regional Ribas do Rio Pardo - MS',
   },
   {
     id: 'agua_clara',
     label: 'Água Clara',
     tag: 'AGC',
-    dotColor: 'bg-teal-400',
-    activeBg: 'bg-teal-500/15 text-teal-400 border-teal-500/30',
     description: 'Polo Regional Água Clara - MS',
   },
 ];
@@ -103,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'veiculos' as const, label: 'Veículos & Escala', icon: Car },
     { id: 'colaboradores' as const, label: 'Colaboradores', icon: Users },
     { id: 'equipes' as const, label: 'Equipes', icon: Layers },
-    { id: 'relatorios' as const, label: 'Relatórios & Histórico', icon: FileSpreadsheet },
+    { id: 'relatorios' as const, label: 'Relatórios Diários', icon: FileSpreadsheet },
   ];
 
   const formatarDataExibicao = (date: Date) => {
@@ -135,16 +128,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/90 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 shadow-lg">
+    <header className="sticky top-0 z-40 w-full border-b border-emerald-900/10 bg-white/95 backdrop-blur-md shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 py-3 border-b border-border/40">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 py-3 border-b border-emerald-900/10">
           <div className="flex flex-wrap items-center gap-3">
+            {/* Logo da Inventar com moldura limpa */}
             <div className="flex items-center gap-3">
-              <div className="h-10 px-2.5 py-1 rounded-xl bg-gradient-to-r from-emerald-950/40 via-card to-card border border-emerald-500/25 shadow-sm flex items-center justify-center shrink-0 overflow-hidden">
+              <div className="h-10 px-2 rounded-xl bg-white border border-emerald-600/20 flex items-center justify-center shrink-0 shadow-sm transition-transform hover:scale-[1.02]">
                 <img
                   src="/logo_inventar_expandWEB_novo2.jpg"
-                  alt="Logo da Empresa"
-                  className="h-8 w-auto max-w-[140px] object-contain"
+                  alt="Inventar Florestal"
+                  className="h-8 w-auto max-w-[135px] object-contain"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
@@ -152,21 +146,22 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                  <span className="font-black text-base sm:text-lg tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-200 bg-clip-text text-transparent">
+                  <span className="font-bold text-base tracking-tight text-emerald-950 font-sans">
                     Controle de Faltas
                   </span>
-                  <Badge variant="outline" className="hidden sm:inline-flex text-[10px] py-0 px-1.5 border-emerald-500/30 text-emerald-400 font-bold bg-emerald-500/10">
-                    FLORESTAL
-                  </Badge>
+                  <span className="text-[10px] uppercase font-mono font-semibold tracking-wider px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    Inventar
+                  </span>
                 </div>
-                <span className="text-[11px] text-muted-foreground font-medium flex items-center gap-1">
-                  Gestão Operacional de Campo
+                <span className="text-xs text-emerald-900/60 font-medium">
+                  Gestão Operacional de Efetivo & Transporte
                 </span>
               </div>
             </div>
 
-            <div className="hidden sm:block h-7 w-[1px] bg-border/80 mx-1" />
+            <div className="hidden sm:block h-6 w-[1px] bg-emerald-900/10 mx-1" />
 
+            {/* Seletor de Unidade com tema Verde e Branco */}
             <div className="relative" ref={dropdownUnidadeRef}>
               <button
                 type="button"
@@ -175,54 +170,58 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setDropdownDataAberto(false);
                 }}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all duration-200 shadow-sm cursor-pointer',
-                  'bg-card/90 hover:bg-card hover:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/30',
-                  dropdownUnidadeAberto ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-500/5' : 'border-border/80'
+                  'flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer shadow-sm',
+                  'bg-white hover:bg-emerald-50/60 border-emerald-200 text-emerald-950',
+                  dropdownUnidadeAberto && 'border-emerald-600 ring-2 ring-emerald-500/20'
                 )}
               >
-                <div className="flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-muted-foreground font-normal">Unidade:</span>
-                  <span className="text-foreground font-bold">{unidadeAtual.label}</span>
-                </div>
-                <span className={cn('w-2 h-2 rounded-full ring-2 ring-background shrink-0', unidadeAtual.dotColor)} />
+                <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-emerald-900/60 font-normal">Unidade:</span>
+                <span className="font-semibold text-emerald-950">{unidadeAtual.label}</span>
                 <ChevronDown
                   className={cn(
-                    'w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ml-0.5',
-                    dropdownUnidadeAberto && 'rotate-180 text-emerald-400'
+                    'w-3.5 h-3.5 text-emerald-700/60 transition-transform ml-0.5',
+                    dropdownUnidadeAberto && 'rotate-180 text-emerald-600'
                   )}
                 />
               </button>
 
               {dropdownUnidadeAberto && (
-                <div className="absolute left-0 mt-2 w-72 rounded-2xl border border-border/80 bg-popover/95 backdrop-blur-xl p-2 shadow-2xl z-50 animate-in fade-in-50 zoom-in-95">
-                  <div className="px-3 py-2 text-[11px] font-semibold text-muted-foreground border-b border-border/40">
-                    Selecione a Unidade Operacional
+                <div className="absolute left-0 mt-2 w-72 rounded-xl border border-emerald-200 bg-white p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-2.5 py-1.5 text-[11px] font-semibold text-emerald-800/70 uppercase tracking-wider">
+                    Unidades Operacionais Inventar
                   </div>
-                  <div className="p-1 space-y-1">
-                    {REGIONAIS.map((item) => {
-                      const ativo = item.id === selectedRegional;
+                  <div className="space-y-1">
+                    {REGIONAIS.map((reg) => {
+                      const ativo = selectedRegional === reg.id;
                       return (
                         <button
-                          key={item.id}
+                          key={reg.id}
                           type="button"
                           onClick={() => {
-                            onRegionalChange(item.id);
+                            onRegionalChange(reg.id);
                             setDropdownUnidadeAberto(false);
                           }}
                           className={cn(
-                            'w-full flex items-center justify-between p-2.5 rounded-xl text-xs transition-colors cursor-pointer text-left',
-                            ativo ? item.activeBg : 'hover:bg-muted text-foreground'
+                            'w-full flex items-center justify-between p-2.5 rounded-lg text-left text-xs transition-colors cursor-pointer',
+                            ativo
+                              ? 'bg-emerald-50 text-emerald-900 font-semibold border border-emerald-200'
+                              : 'text-emerald-950 hover:bg-emerald-50/50'
                           )}
                         >
-                          <div className="flex items-center gap-2">
-                            <span className={cn('w-2 h-2 rounded-full shrink-0', item.dotColor)} />
-                            <div>
-                              <p className="font-bold text-foreground leading-none">{item.label}</p>
-                              <p className="text-[10px] text-muted-foreground mt-0.5">{item.description}</p>
+                          <div>
+                            <div className="font-semibold flex items-center gap-1.5">
+                              {reg.label}
+                              <Badge
+                                variant={ativo ? 'default' : 'secondary'}
+                                className="text-[10px] py-0 px-1.5 h-4 bg-emerald-100 text-emerald-800 border-none"
+                              >
+                                {reg.tag}
+                              </Badge>
                             </div>
+                            <div className="text-[11px] text-emerald-900/60 font-normal">{reg.description}</div>
                           </div>
-                          {ativo && <Check className="w-4 h-4 text-emerald-400 shrink-0" />}
+                          {ativo && <Check className="w-4 h-4 text-emerald-600" />}
                         </button>
                       );
                     })}
@@ -230,8 +229,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               )}
             </div>
+          </div>
 
-            <div className="relative" ref={dropdownDataRef}>
+          {/* Seletor de Data */}
+          <div className="flex items-center gap-2" ref={dropdownDataRef}>
+            <div className="relative">
               <button
                 type="button"
                 onClick={() => {
@@ -239,47 +241,50 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setDropdownUnidadeAberto(false);
                 }}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all duration-200 shadow-sm cursor-pointer',
-                  'bg-card/90 hover:bg-card hover:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/30',
-                  dropdownDataAberto ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-500/5' : 'border-border/80'
+                  'flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer shadow-sm',
+                  'bg-white hover:bg-emerald-50/60 border-emerald-200 text-emerald-950',
+                  dropdownDataAberto && 'border-emerald-600 ring-2 ring-emerald-500/20'
                 )}
               >
-                <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-foreground capitalize">{formatarDataExibicao(selectedDate)}</span>
+                <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="capitalize font-semibold">{formatarDataExibicao(selectedDate)}</span>
                 <ChevronDown
                   className={cn(
-                    'w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ml-0.5',
-                    dropdownDataAberto && 'rotate-180 text-emerald-400'
+                    'w-3.5 h-3.5 text-emerald-700/60 transition-transform ml-0.5',
+                    dropdownDataAberto && 'rotate-180 text-emerald-600'
                   )}
                 />
               </button>
 
               {dropdownDataAberto && (
-                <div className="absolute left-0 mt-2 w-64 rounded-2xl border border-border/80 bg-popover/95 backdrop-blur-xl p-3 shadow-2xl z-50 animate-in fade-in-50 zoom-in-95">
-                  <div className="text-[11px] font-semibold text-muted-foreground mb-2">
-                    Alterar Data da Escala
+                <div className="absolute right-0 mt-2 w-64 rounded-xl border border-emerald-200 bg-white p-3 shadow-xl z-50 space-y-3 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-emerald-900">
+                    <CalendarDays className="w-4 h-4 text-emerald-600" />
+                    <span>Selecione a Data Operacional</span>
                   </div>
+
                   <input
                     type="date"
                     value={formatarDataInput(selectedDate)}
                     onChange={handleDataChangeFromInput}
-                    className="w-full h-10 px-3 rounded-xl border border-input bg-card text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    className="w-full h-9 px-3 text-xs rounded-lg border border-emerald-200 bg-emerald-50/30 text-emerald-950 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                   />
-                  <div className="mt-2 flex justify-between gap-1">
+
+                  <div className="flex justify-between gap-2 pt-1 border-t border-emerald-100">
                     <button
                       type="button"
                       onClick={() => {
                         onDateChange(new Date());
                         setDropdownDataAberto(false);
                       }}
-                      className="px-2.5 py-1 text-[11px] rounded-lg bg-emerald-500/15 text-emerald-300 font-semibold hover:bg-emerald-500/25 transition-colors"
+                      className="px-2 py-1 text-xs font-medium text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded"
                     >
                       Hoje
                     </button>
                     <button
                       type="button"
                       onClick={() => setDropdownDataAberto(false)}
-                      className="px-2.5 py-1 text-[11px] rounded-lg border border-border text-muted-foreground hover:bg-muted transition-colors"
+                      className="px-2 py-1 text-xs font-medium text-emerald-700/60 hover:text-emerald-950"
                     >
                       Fechar
                     </button>
@@ -290,28 +295,29 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        <nav className="flex items-center gap-1.5 overflow-x-auto py-2 no-scrollbar">
+        {/* Abas de Navegação */}
+        <div className="flex items-center gap-1 overflow-x-auto py-2 no-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isSelected = activeTab === item.id;
+            const isAtivo = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => handleTabSelect(item.id)}
                 className={cn(
-                  'flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
-                  isSelected
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-card/60 border border-transparent'
+                  'flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer',
+                  isAtivo
+                    ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-700/20'
+                    : 'text-emerald-950/70 hover:text-emerald-950 hover:bg-emerald-100/60'
                 )}
               >
-                <Icon className={cn('w-4 h-4', isSelected ? 'text-emerald-400' : 'text-muted-foreground')} />
+                <Icon className={cn('w-4 h-4', isAtivo ? 'text-white' : 'text-emerald-600')} />
                 <span>{item.label}</span>
               </button>
             );
           })}
-        </nav>
+        </div>
       </div>
     </header>
   );

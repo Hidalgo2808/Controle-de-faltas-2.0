@@ -1,6 +1,6 @@
 # 🗺️ Mapa de Arquitetura e Estrutura — Controle de Faltas
 
-> **Sincronizado automaticamente pelo Code In Engine** em `2026-10-30 13:05:23`
+> **Sincronizado automaticamente pelo Code In Engine** em `2026-11-02 21:14:13`
 > Este documento é a referência viva e em tempo real da arquitetura, componentes e entidades de negócio do projeto.
 
 ---
@@ -22,9 +22,6 @@
 ## 3. Árvore de Renderização (Hierarquia de Componentes)
 - `src/main.tsx` — Host de montagem React DOM da SPA (#root)
   └── `src/App.tsx` — Componente raiz da aplicação (orquestra layout, estado global e todas as seções)
-        ├── `src/components/AttendanceModal.tsx` — Modal/Dialog interativo (AttendanceModal)
-        │     └── `src/components/utils.ts` — Componente React modular (utils)
-        │     └── `src/components/index.ts` — Componente React modular (index)
         ├── `src/components/CollaboratorsManagement.tsx` — Componente React modular (CollaboratorsManagement)
         │     └── `src/components/utils.ts` — Componente React modular (utils)
         │     └── `src/components/index.ts` — Componente React modular (index)
@@ -48,6 +45,7 @@
         │     └── `src/components/index.ts` — Componente React modular (index)
         ├── `src/components/mockData.ts` — Componente React modular (mockData)
         │     └── `src/components/index.ts` — Componente React modular (index)
+        ├── `src/components/supabase.ts` — Componente React modular (supabase)
         ├── `src/components/index.ts` — Componente React modular (index)
 
 ---
@@ -56,8 +54,8 @@
 
 ### 📦 Componentes da Aplicação (Seções e Features):
 - **`src/components/AttendanceModal.tsx`** (AttendanceModal): Modal/Dialog interativo (AttendanceModal)
-  - *Importado por*: `src/App.tsx`, `src/components/VehicleCardGrid.tsx`
-  - *Sub-componentes*: `src/components/ui/button.tsx`, `src/components/ui/input.tsx`, `src/types/index.ts`, `src/lib/utils.ts`
+  - *Importado por*: `src/components/VehicleCardGrid.tsx`
+  - *Sub-componentes*: `src/types/index.ts`, `src/components/ui/button.tsx`, `src/lib/utils.ts`
 
 - **`src/components/CollaboratorsManagement.tsx`** (CollaboratorsManagement): Componente React modular (CollaboratorsManagement)
   - *Importado por*: `src/App.tsx`
@@ -69,7 +67,7 @@
 
 - **`src/components/ExportReports.tsx`** (ExportReports): Componente React modular (ExportReports)
   - *Importado por*: `src/App.tsx`
-  - *Sub-componentes*: `src/components/ui/card.tsx`, `src/components/ui/button.tsx`, `src/components/ui/badge.tsx`, `src/lib/utils.ts`, `src/types/index.ts`
+  - *Sub-componentes*: `src/types/index.ts`, `src/components/ui/button.tsx`, `src/components/ui/card.tsx`, `src/components/ui/badge.tsx`, `src/components/ui/input.tsx`, `src/lib/utils.ts`
 
 - **`src/components/MetricsHeader.tsx`** (MetricsHeader): Cabeçalho e barra de navegação global com links e ações
   - *Importado por*: `src/App.tsx`
@@ -81,7 +79,7 @@
 
 - **`src/components/NewTeamModal.tsx`** (NewTeamModal): Modal/Dialog interativo (NewTeamModal)
   - *Importado por*: `src/App.tsx`
-  - *Sub-componentes*: `src/types/index.ts`, `src/components/ui/button.tsx`, `src/components/ui/input.tsx`
+  - *Sub-componentes*: `src/components/ui/button.tsx`, `src/components/ui/input.tsx`, `src/types/index.ts`
 
 - **`src/components/TeamsManagement.tsx`** (TeamsManagement): Componente React modular (TeamsManagement)
   - *Importado por*: `src/App.tsx`
@@ -89,7 +87,7 @@
 
 - **`src/components/VehicleCardGrid.tsx`** (VehicleCardGrid): Grid/Catálogo interativo de produtos com filtros e cards
   - *Importado por*: `src/App.tsx`
-  - *Sub-componentes*: `src/types/index.ts`, `src/components/AttendanceModal.tsx`, `src/components/ui/card.tsx`, `src/components/ui/badge.tsx`, `src/components/ui/button.tsx`, `src/lib/utils.ts`
+  - *Sub-componentes*: `src/types/index.ts`, `src/components/AttendanceModal.tsx`, `src/components/ui/badge.tsx`, `src/components/ui/button.tsx`, `src/lib/utils.ts`
 
 - **`src/components/VehicleTopView.tsx`** (VehicleTopView): Componente React modular (VehicleTopView)
   - *Importado por*: `src/components/ComponentShowcase.tsx`

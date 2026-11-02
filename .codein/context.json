@@ -1,7 +1,7 @@
 {
   "projectName": "meu-projeto",
   "framework": "React 18 + TypeScript + Vite + Tailwind CSS",
-  "updatedAt": 1793365523462,
+  "updatedAt": 1793654053713,
   "domain": {
     "title": "Controle de Faltas",
     "tagline": "",
@@ -20,10 +20,10 @@
         "src/components/CollaboratorsManagement.tsx",
         "src/components/TeamsManagement.tsx",
         "src/components/ExportReports.tsx",
-        "src/components/AttendanceModal.tsx",
         "src/components/NewTeamModal.tsx",
+        "src/types/index.ts",
         "src/data/mockData.ts",
-        "src/types/index.ts"
+        "src/lib/supabase.ts"
       ],
       "importedBy": [
         "src/main.tsx"
@@ -35,13 +35,11 @@
       "relPath": "src/components/AttendanceModal.tsx",
       "name": "AttendanceModal",
       "imports": [
-        "src/components/ui/button.tsx",
-        "src/components/ui/input.tsx",
         "src/types/index.ts",
+        "src/components/ui/button.tsx",
         "src/lib/utils.ts"
       ],
       "importedBy": [
-        "src/App.tsx",
         "src/components/VehicleCardGrid.tsx"
       ],
       "description": "Modal/Dialog interativo (AttendanceModal)",
@@ -80,11 +78,12 @@
       "relPath": "src/components/ExportReports.tsx",
       "name": "ExportReports",
       "imports": [
-        "src/components/ui/card.tsx",
+        "src/types/index.ts",
         "src/components/ui/button.tsx",
+        "src/components/ui/card.tsx",
         "src/components/ui/badge.tsx",
-        "src/lib/utils.ts",
-        "src/types/index.ts"
+        "src/components/ui/input.tsx",
+        "src/lib/utils.ts"
       ],
       "importedBy": [
         "src/App.tsx"
@@ -124,9 +123,9 @@
       "relPath": "src/components/NewTeamModal.tsx",
       "name": "NewTeamModal",
       "imports": [
-        "src/types/index.ts",
         "src/components/ui/button.tsx",
-        "src/components/ui/input.tsx"
+        "src/components/ui/input.tsx",
+        "src/types/index.ts"
       ],
       "importedBy": [
         "src/App.tsx"
@@ -194,8 +193,7 @@
       "importedBy": [
         "src/components/CollaboratorsManagement.tsx",
         "src/components/ExportReports.tsx",
-        "src/components/TeamsManagement.tsx",
-        "src/components/VehicleCardGrid.tsx"
+        "src/components/TeamsManagement.tsx"
       ],
       "description": "Componente base de UI reutilizável (card)",
       "isUiBase": true
@@ -207,8 +205,8 @@
         "src/lib/utils.ts"
       ],
       "importedBy": [
-        "src/components/AttendanceModal.tsx",
         "src/components/CollaboratorsManagement.tsx",
+        "src/components/ExportReports.tsx",
         "src/components/NewTeamModal.tsx",
         "src/components/TeamsManagement.tsx"
       ],
@@ -221,7 +219,6 @@
       "imports": [
         "src/types/index.ts",
         "src/components/AttendanceModal.tsx",
-        "src/components/ui/card.tsx",
         "src/components/ui/badge.tsx",
         "src/components/ui/button.tsx",
         "src/lib/utils.ts"
@@ -270,7 +267,9 @@
       "relPath": "src/lib/supabase.ts",
       "name": "supabase",
       "imports": [],
-      "importedBy": [],
+      "importedBy": [
+        "src/App.tsx"
+      ],
       "description": "Componente React modular (supabase)",
       "isUiBase": false
     },
