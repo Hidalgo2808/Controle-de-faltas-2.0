@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Users, Car, MapPin, Plus, Check } from 'lucide-react';
-import { Colaborador, Regional, Veiculo } from '../types';
+import { X, Users, Car, MapPin, Plus } from 'lucide-react';
+import { Colaborador, Regional } from '../types';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
@@ -106,7 +106,7 @@ export const NewTeamModal: React.FC<NewTeamModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-muted-foreground hover:bg-muted transition-colors"
+            className="rounded-lg p-1 text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -128,7 +128,7 @@ export const NewTeamModal: React.FC<NewTeamModalProps> = ({
               <select
                 value={regional}
                 onChange={(e) => setRegional(e.target.value as 'ribas' | 'agua_clara')}
-                className="w-full h-10 px-3 rounded-xl border border-input bg-card/50 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                className="w-full h-10 px-3 rounded-xl border border-input bg-card text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               >
                 <option value="ribas">Ribas do Rio Pardo</option>
                 <option value="agua_clara">Água Clara</option>
@@ -173,11 +173,11 @@ export const NewTeamModal: React.FC<NewTeamModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label className="text-[11px] text-muted-foreground">Motorista</label>
+                <label className="text-[11px] text-muted-foreground block mb-1">Motorista</label>
                 <select
                   value={motoristaId}
                   onChange={(e) => setMotoristaId(e.target.value)}
-                  className="w-full h-9 px-2 rounded-lg border border-input bg-background text-xs"
+                  className="w-full h-9 px-2 rounded-lg border border-input bg-card text-xs text-foreground"
                 >
                   <option value="">Selecione da Reserva ou Novo...</option>
                   {colaboradoresReserva.map((c) => (
@@ -189,11 +189,11 @@ export const NewTeamModal: React.FC<NewTeamModalProps> = ({
               </div>
 
               <div>
-                <label className="text-[11px] text-muted-foreground">Ajudante (Frente Dir)</label>
+                <label className="text-[11px] text-muted-foreground block mb-1">Ajudante (Frente Dir)</label>
                 <select
                   value={frenteDirId}
                   onChange={(e) => setFrenteDirId(e.target.value)}
-                  className="w-full h-9 px-2 rounded-lg border border-input bg-background text-xs"
+                  className="w-full h-9 px-2 rounded-lg border border-input bg-card text-xs text-foreground"
                 >
                   <option value="">Selecione da Reserva ou Novo...</option>
                   {colaboradoresReserva.map((c) => (
@@ -205,13 +205,13 @@ export const NewTeamModal: React.FC<NewTeamModalProps> = ({
               </div>
 
               <div>
-                <label className="text-[11px] text-muted-foreground">Operador Traseiro 1</label>
+                <label className="text-[11px] text-muted-foreground block mb-1">Operador Traseiro 1 (Opcional)</label>
                 <select
                   value={trasEsqId}
                   onChange={(e) => setTrasEsqId(e.target.value)}
-                  className="w-full h-9 px-2 rounded-lg border border-input bg-background text-xs"
+                  className="w-full h-9 px-2 rounded-lg border border-input bg-card text-xs text-foreground"
                 >
-                  <option value="">Opcional...</option>
+                  <option value="">Nenhum / Posto Vazio</option>
                   {colaboradoresReserva.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.nome} ({c.cargo})
@@ -221,13 +221,13 @@ export const NewTeamModal: React.FC<NewTeamModalProps> = ({
               </div>
 
               <div>
-                <label className="text-[11px] text-muted-foreground">Operador Traseiro 2</label>
+                <label className="text-[11px] text-muted-foreground block mb-1">Operador Traseiro 2 (Opcional)</label>
                 <select
                   value={trasDirId}
                   onChange={(e) => setTrasDirId(e.target.value)}
-                  className="w-full h-9 px-2 rounded-lg border border-input bg-background text-xs"
+                  className="w-full h-9 px-2 rounded-lg border border-input bg-card text-xs text-foreground"
                 >
-                  <option value="">Opcional...</option>
+                  <option value="">Nenhum / Posto Vazio</option>
                   {colaboradoresReserva.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.nome} ({c.cargo})
@@ -238,16 +238,12 @@ export const NewTeamModal: React.FC<NewTeamModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+          <div className="flex justify-end gap-2 pt-3 border-t border-border/40">
             <Button type="button" variant="outline" size="sm" onClick={onClose}>
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              size="sm"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
-            >
-              Criar Equipe
+            <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white">
+              Salvar Equipe
             </Button>
           </div>
         </form>

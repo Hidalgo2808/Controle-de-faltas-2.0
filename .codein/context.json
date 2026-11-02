@@ -1,7 +1,7 @@
 {
   "projectName": "meu-projeto",
   "framework": "React 18 + TypeScript + Vite + Tailwind CSS",
-  "updatedAt": 1792754912592,
+  "updatedAt": 1793365523462,
   "domain": {
     "title": "Controle de Faltas",
     "tagline": "",
@@ -20,6 +20,7 @@
         "src/components/CollaboratorsManagement.tsx",
         "src/components/TeamsManagement.tsx",
         "src/components/ExportReports.tsx",
+        "src/components/AttendanceModal.tsx",
         "src/components/NewTeamModal.tsx",
         "src/data/mockData.ts",
         "src/types/index.ts"
@@ -35,12 +36,12 @@
       "name": "AttendanceModal",
       "imports": [
         "src/components/ui/button.tsx",
-        "src/components/ui/badge.tsx",
         "src/components/ui/input.tsx",
         "src/types/index.ts",
         "src/lib/utils.ts"
       ],
       "importedBy": [
+        "src/App.tsx",
         "src/components/VehicleCardGrid.tsx"
       ],
       "description": "Modal/Dialog interativo (AttendanceModal)",
@@ -157,7 +158,6 @@
         "src/lib/utils.ts"
       ],
       "importedBy": [
-        "src/components/AttendanceModal.tsx",
         "src/components/CollaboratorsManagement.tsx",
         "src/components/ExportReports.tsx",
         "src/components/Navbar.tsx",

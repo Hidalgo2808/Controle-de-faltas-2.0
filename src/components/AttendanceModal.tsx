@@ -2,17 +2,11 @@ import React, { useState } from 'react';
 import {
   X,
   CheckCircle2,
-  AlertTriangle,
   UserCheck,
   UserX,
-  Phone,
-  Shield,
   Search,
-  User,
-  Info,
 } from 'lucide-react';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Colaborador, StatusPresenca, MotivoFalta } from '../types';
 import { cn } from '@/lib/utils';
@@ -21,8 +15,16 @@ export interface AttendanceModalProps {
   isOpen: boolean;
   colaborador: Colaborador;
   colaboradoresReserva?: Colaborador[];
+  veiculoId?: string;
   onClose: () => void;
-  onSave: (
+  onSave?: (
+    status: StatusPresenca,
+    motivo?: MotivoFalta,
+    observacao?: string,
+    substitutoId?: string
+  ) => void;
+  onConfirm?: (
+    colaboradorId: string,
     status: StatusPresenca,
     motivo?: MotivoFalta,
     observacao?: string,
@@ -52,6 +54,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   colaboradoresReserva = [],
   onClose,
   onSave,
+  onConfirm,
 }) => {
   const [status, setStatus] = useState<StatusPresenca>(colaborador?.status || 'presente');
   const [motivo, setMotivo] = useState<MotivoFalta | undefined>(colaborador?.motivoFalta);
@@ -71,12 +74,15 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   });
 
   const handleSalvar = () => {
-    onSave(
-      status,
-      status === 'falta' ? motivo : undefined,
-      observacao.trim() || undefined,
-      status === 'substituto' ? substitutoId : undefined
-    );
+    const finalMotivo = status === 'falta' ? motivo : undefined;
+    const finalObs = observacao.trim() || undefined;
+    const finalSub = status === 'substituto' ? substitutoId : undefined;
+
+    if (onConfirm) {
+      onConfirm(colaborador.id, status, finalMotivo, finalObs, finalSub);
+    } else if (onSave) {
+      onSave(status, finalMotivo, finalObs, finalSub);
+    }
     onClose();
   };
 
@@ -86,7 +92,6 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
         {/* Cabeçalho do Modal */}
         <div className="flex items-center justify-between border-b border-border/50 pb-3">
           <div className="flex items-center gap-3">
-            {/* Foto Ampliada no Header do Modal */}
             <div className="w-14 h-14 rounded-2xl border-2 border-emerald-500/40 overflow-hidden shrink-0 shadow-md flex items-center justify-center bg-muted/40">
               {colaborador.foto ? (
                 <img
@@ -206,25 +211,21 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                     className={cn(
                       'flex items-center justify-between p-2 rounded-xl border cursor-pointer transition-all',
                       substitutoId === sub.id
-                        ? 'border-amber-500 bg-amber-500/15 text-foreground ring-1 ring-amber-500/30'
-                        : 'border-border/50 hover:bg-card text-muted-foreground'
+                        ? 'border-amber-500 bg-amber-500/10'
+                        : 'border-border/40 hover:bg-muted/30'
                     )}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl border overflow-hidden shrink-0 flex items-center justify-center bg-muted/40 font-bold text-xs text-foreground">
-                        {sub.foto ? (
-                          <img src={sub.foto} alt={sub.nome} className="w-full h-full object-cover" />
-                        ) : (
-                          getIniciais(sub.nome)
-                        )}
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-card border flex items-center justify-center text-[10px] font-bold">
+                        {getIniciais(sub.nome)}
                       </div>
                       <div>
-                        <p className="font-bold text-xs text-foreground">{sub.nome}</p>
+                        <p className="text-xs font-medium text-foreground">{sub.nome}</p>
                         <p className="text-[10px] text-muted-foreground">{sub.cargo}</p>
                       </div>
                     </div>
                     {substitutoId === sub.id && (
-                      <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span className="text-xs font-bold text-amber-400">Selecionado</span>
                     )}
                   </div>
                 ))
@@ -234,27 +235,28 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
         )}
 
         {/* Observações */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-foreground">Observações / Detalhes</label>
-          <Input
-            placeholder="Ex: Atestado entregue ao RH, retorno previsto para amanhã..."
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-foreground">Observações Adicionais</label>
+          <textarea
             value={observacao}
             onChange={(e) => setObservacao(e.target.value)}
-            className="text-xs h-10"
+            placeholder="Ex: Liberado para retorno médico, justificativa entregue à liderança..."
+            className="w-full h-20 p-3 rounded-xl border border-input bg-card text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
           />
         </div>
 
-        {/* Rodapé de Ações */}
-        <div className="pt-2 flex justify-end gap-2 border-t border-border/50">
-          <Button type="button" variant="outline" onClick={onClose} className="rounded-xl">
+        {/* Ações */}
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+          <Button type="button" variant="outline" onClick={onClose} size="sm">
             Cancelar
           </Button>
           <Button
             type="button"
             onClick={handleSalvar}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl"
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white"
           >
-            Confirmar Registro
+            Confirmar Alteração
           </Button>
         </div>
       </div>

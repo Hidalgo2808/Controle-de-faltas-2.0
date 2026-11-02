@@ -1,6 +1,6 @@
 # 🗺️ Mapa de Arquitetura e Estrutura — Controle de Faltas
 
-> **Sincronizado automaticamente pelo Code In Engine** em `2026-10-23 11:28:32`
+> **Sincronizado automaticamente pelo Code In Engine** em `2026-10-30 13:05:23`
 > Este documento é a referência viva e em tempo real da arquitetura, componentes e entidades de negócio do projeto.
 
 ---
@@ -22,6 +22,9 @@
 ## 3. Árvore de Renderização (Hierarquia de Componentes)
 - `src/main.tsx` — Host de montagem React DOM da SPA (#root)
   └── `src/App.tsx` — Componente raiz da aplicação (orquestra layout, estado global e todas as seções)
+        ├── `src/components/AttendanceModal.tsx` — Modal/Dialog interativo (AttendanceModal)
+        │     └── `src/components/utils.ts` — Componente React modular (utils)
+        │     └── `src/components/index.ts` — Componente React modular (index)
         ├── `src/components/CollaboratorsManagement.tsx` — Componente React modular (CollaboratorsManagement)
         │     └── `src/components/utils.ts` — Componente React modular (utils)
         │     └── `src/components/index.ts` — Componente React modular (index)
@@ -53,8 +56,8 @@
 
 ### 📦 Componentes da Aplicação (Seções e Features):
 - **`src/components/AttendanceModal.tsx`** (AttendanceModal): Modal/Dialog interativo (AttendanceModal)
-  - *Importado por*: `src/components/VehicleCardGrid.tsx`
-  - *Sub-componentes*: `src/components/ui/button.tsx`, `src/components/ui/badge.tsx`, `src/components/ui/input.tsx`, `src/types/index.ts`, `src/lib/utils.ts`
+  - *Importado por*: `src/App.tsx`, `src/components/VehicleCardGrid.tsx`
+  - *Sub-componentes*: `src/components/ui/button.tsx`, `src/components/ui/input.tsx`, `src/types/index.ts`, `src/lib/utils.ts`
 
 - **`src/components/CollaboratorsManagement.tsx`** (CollaboratorsManagement): Componente React modular (CollaboratorsManagement)
   - *Importado por*: `src/App.tsx`

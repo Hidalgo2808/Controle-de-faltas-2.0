@@ -214,8 +214,8 @@ export const MetricsHeader: React.FC<MetricsHeaderProps> = ({
                   </div>
                 </div>
                 <div className="mt-3">
-                  <p className="text-sm font-bold text-foreground">{card.label}</p>
-                  <p className="text-xs text-muted-foreground">{card.descricao}</p>
+                  <p className="text-xs font-bold text-foreground">{card.label}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{card.descricao}</p>
                 </div>
               </div>
             ))}

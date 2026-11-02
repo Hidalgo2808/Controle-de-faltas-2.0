@@ -17,6 +17,7 @@ import {
   FileUp,
   Loader2,
   CalendarDays,
+  FileText,
 } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
@@ -66,11 +67,6 @@ const statusConfig: Record<StatusPresenca, { label: string; className: string }>
   substituto: { label: 'Substituto', className: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
 };
 
-const regionalLabel: Record<string, string> = {
-  ribas: 'Ribas do Rio Pardo',
-  agua_clara: 'Água Clara',
-};
-
 const getIniciais = (nome?: string) => {
   if (!nome) return 'CO';
   const partes = nome.trim().split(' ');
@@ -90,7 +86,6 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
   const [filterRegional, setFilterRegional] = useState<Regional | 'todas'>(selectedRegional);
   const [fotoModalAberta, setFotoModalAberta] = useState<{ url: string; nome: string; cargo: string } | null>(null);
 
-  // Modal de cadastro manual
   const [modalNovoAberto, setModalNovoAberto] = useState(false);
   const [novoNome, setNovoNome] = useState('');
   const [novoCargo, setNovoCargo] = useState('');
@@ -99,7 +94,6 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
   const [novaUnidade, setNovaUnidade] = useState<'ribas' | 'agua_clara'>('ribas');
   const [novaDataAdmissao, setNovaDataAdmissao] = useState('15/01/2023');
 
-  // Modal de Importação de Planilha
   const [modalExcelAberto, setModalExcelAberto] = useState(false);
   const [isProcessandoExcel, setIsProcessandoExcel] = useState(false);
   const [excelPreview, setExcelPreview] = useState<ColaboradorCompleto[]>([]);
@@ -124,7 +118,7 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
           id: colab.id,
           nome: colab.nome || 'Sem Nome',
           cargo: colab.cargo || 'Operador',
-          matricula: '',
+          matricula: colab.matricula || '',
           foto: colab.foto ?? '',
           telefone: colab.telefone ?? '',
           status: colab.status || 'presente',
@@ -149,7 +143,7 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
         id: r.id || `res-${idx}`,
         nome: r.nome || 'Colaborador Reserva',
         cargo: r.cargo || 'Reserva Operacional',
-        matricula: '',
+        matricula: r.matricula || '',
         foto: r.foto || '',
         telefone: r.telefone || '',
         status: r.status || 'presente',
@@ -224,8 +218,8 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
       veiculoPrefixo: 'Banco de Reserva',
       veiculoPlaca: '-',
       regional: novaUnidade,
-      unidade: novaUnidade === 'ribas' ? 'Ribas do Rio Pardo' : 'Água Clara',
-      dataAdmissao: novaDataAdmissao || '15/01/2023',
+      unidade: novaUnidade === 'agua_clara' ? 'Água Clara' : 'Ribas do Rio Pardo',
+      dataAdmissao: novaDataAdmissao.trim() || '15/01/2023',
     };
 
     setColaboradoresAdicionados((prev) => [novo, ...prev]);
@@ -238,102 +232,94 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
     setModalNovoAberto(false);
   };
 
-  const parseCSVLinhas = (text: string): string[][] => {
+  // Leitura nativa de CSV/TSV sem dependência do pacote xlsx
+  const parseCSVText = (text: string): ColaboradorCompleto[] => {
     const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-    return lines.map((linha) => {
-      const separator = linha.includes(';') ? ';' : ',';
-      return linha.split(separator).map((item) => item.trim().replace(/^["']|["']$/g, ''));
-    });
+    if (lines.length <= 1) return [];
+
+    const separator = lines[0].includes(';') ? ';' : lines[0].includes('\t') ? '\t' : ',';
+    const headers = lines[0].split(separator).map((h) => h.trim().toLowerCase().replace(/"/g, ''));
+
+    const nomeIdx = headers.findIndex((h) => h.includes('nome') || h.includes('operador') || h.includes('colaborador'));
+    const cargoIdx = headers.findIndex((h) => h.includes('cargo') || h.includes('função') || h.includes('funcao'));
+    const telIdx = headers.findIndex((h) => h.includes('telefone') || h.includes('contato') || h.includes('celular') || h.includes('fone'));
+    const unidadeIdx = headers.findIndex((h) => h.includes('unidade') || h.includes('regional') || h.includes('polo') || h.includes('cidade'));
+    const admIdx = headers.findIndex((h) => h.includes('admissao') || h.includes('admissão') || h.includes('data'));
+
+    const parsed: ColaboradorCompleto[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i].split(separator).map((col) => col.trim().replace(/^"(.*)"$/, '$1'));
+      const nomeVal = nomeIdx >= 0 ? row[nomeIdx] : row[0];
+      if (!nomeVal || nomeVal.length < 2) continue;
+
+      const cargoVal = cargoIdx >= 0 && row[cargoIdx] ? row[cargoIdx] : 'Operador Florestal';
+      const telVal = telIdx >= 0 && row[telIdx] ? row[telIdx] : '(67) 99999-0000';
+      const unidVal = unidadeIdx >= 0 && row[unidadeIdx] ? row[unidadeIdx] : 'Ribas do Rio Pardo';
+      const admVal = admIdx >= 0 && row[admIdx] ? row[admIdx] : '01/01/2023';
+
+      const isAguaClara = unidVal.toLowerCase().includes('agua') || unidVal.toLowerCase().includes('água');
+      const regionalKey: 'ribas' | 'agua_clara' = isAguaClara ? 'agua_clara' : 'ribas';
+
+      parsed.push({
+        id: `import-${Date.now()}-${i}`,
+        nome: nomeVal,
+        cargo: cargoVal,
+        matricula: '',
+        foto: '',
+        telefone: telVal,
+        status: 'presente',
+        equipeId: 'reserva',
+        equipeNumero: 1,
+        posicaoVeiculo: 'motorista',
+        veiculoPrefixo: 'Banco de Reserva',
+        veiculoPlaca: '-',
+        regional: regionalKey,
+        unidade: isAguaClara ? 'Água Clara' : 'Ribas do Rio Pardo',
+        dataAdmissao: admVal,
+      });
+    }
+
+    return parsed;
   };
 
-  const handleArquivoExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setExcelArquivoNome(file.name);
-    setExcelErro(null);
-    setExcelImportSucesso(false);
+  const handleProcessarArquivo = async (file: File) => {
     setIsProcessandoExcel(true);
+    setExcelErro(null);
+    setExcelPreview([]);
+    setExcelArquivoNome(file.name);
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const conteudo = evt.target?.result;
-        if (!conteudo) {
-          throw new Error('Arquivo vazio ou ilegível');
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const content = e.target?.result as string;
+          const parsed = parseCSVText(content || '');
+          if (parsed.length === 0) {
+            setExcelErro('Nenhum colaborador válido identificado no arquivo. Verifique se a primeira linha contém as colunas (Nome, Cargo, Telefone, Unidade).');
+          } else {
+            setExcelPreview(parsed);
+          }
+        } catch {
+          setExcelErro('Falha ao processar o formato do arquivo. Utilize arquivos .CSV ou texto com delimitador vírgula/ponto-e-vírgula.');
+        } finally {
+          setIsProcessandoExcel(false);
         }
+      };
 
-        const texto = typeof conteudo === 'string' ? conteudo : new TextDecoder('utf-8').decode(conteudo as ArrayBuffer);
-        const linhas = parseCSVLinhas(texto);
-
-        if (linhas.length < 2) {
-          throw new Error('O arquivo deve conter ao menos 1 linha de cabeçalho e 1 linha de dados.');
-        }
-
-        const header = linhas[0].map((h) => h.toLowerCase());
-        const colNomeIdx = header.findIndex((h) => h.includes('nome') || h.includes('colaborador'));
-        const colCargoIdx = header.findIndex((h) => h.includes('cargo') || h.includes('função') || h.includes('funcao'));
-        const colTelIdx = header.findIndex((h) => h.includes('tel') || h.includes('fone') || h.includes('contato'));
-        const colUnidadeIdx = header.findIndex((h) => h.includes('unidade') || h.includes('regional') || h.includes('polo'));
-        const colAdmissaoIdx = header.findIndex((h) => h.includes('admiss') || h.includes('data'));
-
-        const parsedColaboradores: ColaboradorCompleto[] = [];
-
-        for (let i = 1; i < linhas.length; i++) {
-          const row = linhas[i];
-          if (!row || row.length === 0 || !row[0]) continue;
-
-          const nome = (colNomeIdx >= 0 ? row[colNomeIdx] : row[0]) || '';
-          if (!nome.trim()) continue;
-
-          const cargo = (colCargoIdx >= 0 ? row[colCargoIdx] : row[1]) || 'Operador Florestal';
-          const telefone = (colTelIdx >= 0 ? row[colTelIdx] : row[2]) || '(67) 99999-0000';
-          const rawUnidade = (colUnidadeIdx >= 0 ? row[colUnidadeIdx] : row[3]) || 'Ribas do Rio Pardo';
-          const rawAdmissao = (colAdmissaoIdx >= 0 ? row[colAdmissaoIdx] : row[4]) || '15/01/2023';
-
-          const isAguaClara = rawUnidade.toLowerCase().includes('agua') || rawUnidade.toLowerCase().includes('clara');
-          const reg: 'ribas' | 'agua_clara' = isAguaClara ? 'agua_clara' : 'ribas';
-
-          parsedColaboradores.push({
-            id: `excel-import-${Date.now()}-${i}`,
-            nome: nome.trim(),
-            cargo: cargo.trim(),
-            matricula: '',
-            foto: '',
-            telefone: telefone.trim(),
-            status: 'presente',
-            equipeId: 'reserva',
-            equipeNumero: 1,
-            posicaoVeiculo: 'motorista',
-            veiculoPrefixo: 'Banco de Reserva',
-            veiculoPlaca: '-',
-            regional: reg,
-            unidade: reg === 'agua_clara' ? 'Água Clara' : 'Ribas do Rio Pardo',
-            dataAdmissao: rawAdmissao.trim(),
-          });
-        }
-
-        if (parsedColaboradores.length === 0) {
-          throw new Error('Nenhum registro de colaborador foi identificado. Verifique se há uma coluna com "Nome".');
-        }
-
-        setExcelPreview(parsedColaboradores);
+      reader.onerror = () => {
+        setExcelErro('Erro na leitura física do arquivo selecionado.');
         setIsProcessandoExcel(false);
-      } catch (err: any) {
-        setIsProcessandoExcel(false);
-        setExcelErro(err.message || 'Falha ao processar arquivo.');
-      }
-    };
+      };
 
-    reader.onerror = () => {
+      reader.readAsText(file, 'UTF-8');
+    } catch {
+      setExcelErro('Não foi possível ler o arquivo. Certifique-se de salvar sua planilha no formato .CSV.');
       setIsProcessandoExcel(false);
-      setExcelErro('Erro na leitura do arquivo local.');
-    };
-
-    reader.readAsText(file);
+    }
   };
 
-  const handleConfirmarImportacaoExcel = () => {
+  const handleConfirmarImportacao = () => {
     if (excelPreview.length === 0) return;
     setColaboradoresAdicionados((prev) => [...excelPreview, ...prev]);
     onImportarColaboradores?.(excelPreview);
@@ -341,32 +327,50 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
     setTimeout(() => {
       setModalExcelAberto(false);
       setExcelPreview([]);
-      setExcelArquivoNome('');
       setExcelImportSucesso(false);
+      setExcelArquivoNome('');
     }, 1200);
   };
 
+  const handleBaixarModelo = () => {
+    const csvContent =
+      'Nome;Cargo;Telefone;Unidade;Data Admissao\n' +
+      'Carlos Eduardo Silva;Operador de Harvester;(67) 99811-2233;Ribas do Rio Pardo;12/03/2022\n' +
+      'Lucas Gabriel Ribeiro;Operador de Forwarder;(67) 99722-4455;Água Clara;18/06/2021\n' +
+      'Marcio Antonio Souza;Mecânico de Campo;(67) 99633-7788;Ribas do Rio Pardo;05/01/2023\n';
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'modelo_importacao_colaboradores.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Barra de Filtros e Ações */}
-      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-        <div className="flex flex-1 gap-2 items-center">
-          <div className="relative flex-1 max-w-md">
+    <div className="w-full space-y-6">
+      {/* Barra de Ações Superior */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:w-80">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
+              placeholder="Buscar por nome, cargo ou placa..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar colaborador por nome, cargo ou veículo..."
-              className="pl-9 h-10 rounded-xl"
+              className="pl-9 bg-card/60"
             />
           </div>
 
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
-            className="h-10 px-3 rounded-xl border border-input bg-card text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            onChange={(e) => setFilterStatus(e.target.value as StatusPresenca | 'todos')}
+            className="h-10 px-3 rounded-xl border border-input bg-card/60 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
           >
-            <option value="todos">Todos Status</option>
+            <option value="todos">Todos os Status</option>
             <option value="presente">Presentes</option>
             <option value="falta">Faltas</option>
             <option value="substituto">Substitutos</option>
@@ -374,10 +378,10 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
 
           <select
             value={filterRegional}
-            onChange={(e) => setFilterRegional(e.target.value as any)}
-            className="h-10 px-3 rounded-xl border border-input bg-card text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            onChange={(e) => setFilterRegional(e.target.value as Regional | 'todas')}
+            className="h-10 px-3 rounded-xl border border-input bg-card/60 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
           >
-            <option value="todas">Todas Unidades</option>
+            <option value="todas">Todas as Unidades</option>
             <option value="ribas">Ribas do Rio Pardo</option>
             <option value="agua_clara">Água Clara</option>
           </select>
@@ -387,17 +391,19 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
           <Button
             type="button"
             variant="outline"
+            size="sm"
             onClick={() => setModalExcelAberto(true)}
-            className="gap-2 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 h-10 px-3.5 rounded-xl font-bold text-xs"
+            className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-            <span>Subir Planilha</span>
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Importar Planilha</span>
           </Button>
 
           <Button
             type="button"
+            size="sm"
             onClick={() => setModalNovoAberto(true)}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white h-10 px-3.5 rounded-xl font-bold text-xs shadow-sm"
+            className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
           >
             <Plus className="w-4 h-4" />
             <span>Novo Colaborador</span>
@@ -405,274 +411,212 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
         </div>
       </div>
 
-      {/* Grid de Colaboradores com FOTOS AMPLIADAS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {colaboradoresFiltrados.map((colab) => {
-          const st = statusConfig[colab.status] || statusConfig.presente;
-          return (
-            <Card
-              key={colab.id}
-              className="group border border-border/70 bg-card/70 hover:bg-card hover:border-emerald-500/50 hover:shadow-xl transition-all duration-200 overflow-hidden flex flex-col justify-between"
-            >
-              <CardContent className="p-4 flex flex-col items-center text-center">
-                {/* Header do Card com Tag de Unidade e Status */}
-                <div className="w-full flex items-center justify-between gap-1 mb-3">
-                  <Badge variant="outline" className="text-[10px] py-0 px-2 border-border/80">
-                    {colab.unidade || regionalLabel[colab.regional] || 'Ribas'}
-                  </Badge>
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border',
-                      st.className
-                    )}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                    {st.label}
-                  </span>
-                </div>
-
-                {/* FOTO DO COLABORADOR COM TAMANHO BEM MAIOR */}
+      {/* Grid de Cards de Colaboradores */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {colaboradoresFiltrados.map((colab) => (
+          <Card
+            key={colab.id}
+            className="group relative overflow-hidden border border-border/60 hover:border-emerald-500/40 transition-all hover:shadow-lg bg-card/70 backdrop-blur-sm"
+          >
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                {/* Foto Ampliada */}
                 <div
                   onClick={() =>
-                    colab.foto &&
-                    setFotoModalAberta({
-                      url: colab.foto,
-                      nome: colab.nome,
-                      cargo: colab.cargo,
-                    })
+                    colab.foto && setFotoModalAberta({ url: colab.foto, nome: colab.nome, cargo: colab.cargo })
                   }
                   className={cn(
-                    'relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 shadow-md transition-transform duration-200 group-hover:scale-105 flex items-center justify-center my-1',
-                    colab.foto ? 'cursor-zoom-in' : '',
-                    colab.status === 'falta'
-                      ? 'border-rose-500/50 bg-rose-950/20'
-                      : colab.status === 'substituto'
-                      ? 'border-amber-500/50 bg-amber-950/20'
-                      : 'border-emerald-500/40 bg-emerald-950/20'
+                    'w-16 h-16 rounded-2xl border-2 overflow-hidden shrink-0 shadow-md flex items-center justify-center bg-muted/40 cursor-pointer relative group/avatar transition-transform hover:scale-105',
+                    colab.status === 'presente' && 'border-emerald-500/50',
+                    colab.status === 'falta' && 'border-rose-500/50',
+                    colab.status === 'substituto' && 'border-amber-500/50'
                   )}
                 >
                   {colab.foto ? (
-                    <img
-                      src={colab.foto}
-                      alt={colab.nome}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
+                    <>
+                      <img src={colab.foto} alt={colab.nome} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
+                        <Eye className="w-4 h-4 text-white" />
+                      </div>
+                    </>
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-muted/60 to-muted/20 text-foreground font-black text-3xl">
-                      {getIniciais(colab.nome)}
-                    </div>
-                  )}
-
-                  {colab.foto && (
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs gap-1">
-                      <Eye className="w-4 h-4" />
-                      <span>Ver Foto</span>
-                    </div>
+                    <span className="font-black text-foreground text-lg">{getIniciais(colab.nome)}</span>
                   )}
                 </div>
 
-                {/* Nome do Colaborador abaixo da foto */}
-                <h4 className="mt-2.5 font-bold text-base text-foreground group-hover:text-emerald-400 transition-colors line-clamp-1">
-                  {colab.nome}
-                </h4>
-                <p className="text-xs text-muted-foreground font-medium line-clamp-1 mt-0.5">
-                  {colab.cargo}
-                </p>
-
-                {/* Dados Complementares */}
-                <div className="w-full mt-3 pt-3 border-t border-border/50 text-left space-y-1.5 text-xs text-muted-foreground">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5 text-emerald-400" />
-                      Veículo:
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <h4 className="font-bold text-sm text-foreground truncate">{colab.nome}</h4>
+                    <span
+                      className={cn(
+                        'text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0',
+                        statusConfig[colab.status]?.className || statusConfig.presente.className
+                      )}
+                    >
+                      {statusConfig[colab.status]?.label || 'Presente'}
                     </span>
-                    <span className="font-semibold text-foreground">{colab.veiculoPrefixo || '-'}</span>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-                      Contato:
-                    </span>
-                    <span className="font-mono text-[11px] text-foreground">{colab.telefone || '-'}</span>
-                  </div>
+                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                    <Briefcase className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span>{colab.cargo}</span>
+                  </p>
 
-                  {colab.dataAdmissao && (
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
-                        Admissão:
-                      </span>
-                      <span className="font-mono text-[11px] text-foreground">{colab.dataAdmissao}</span>
-                    </div>
-                  )}
-
-                  {colab.status === 'substituto' && colab.substitutoNome && (
-                    <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] mt-1">
-                      <strong>Substituto de:</strong> {colab.substitutoNome}
-                    </div>
-                  )}
-
-                  {colab.status === 'falta' && colab.motivoFalta && (
-                    <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[11px] mt-1">
-                      <strong>Motivo:</strong> {colab.motivoFalta}
-                    </div>
-                  )}
+                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                    <Building2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span>{colab.unidade || 'Ribas do Rio Pardo'}</span>
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+              </div>
+
+              <div className="pt-2 border-t border-border/40 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-1.5 truncate">
+                  <Phone className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span className="truncate">{colab.telefone || '(67) 99999-0000'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 truncate justify-end">
+                  <CalendarDays className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <span className="truncate">{colab.dataAdmissao || '10/02/2023'}</span>
+                </div>
+              </div>
+
+              {colab.status === 'falta' && colab.motivoFalta && (
+                <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-[11px] text-rose-300 flex items-start gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                  <span className="line-clamp-2">
+                    <strong>Motivo:</strong> {colab.motivoFalta}
+                    {colab.observacao ? ` - ${colab.observacao}` : ''}
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Modal de Zoom da Foto */}
+      {colaboradoresFiltrados.length === 0 && (
+        <div className="text-center py-12 border border-dashed border-border/60 rounded-2xl bg-card/30">
+          <Users className="w-10 h-10 text-muted-foreground mx-auto mb-2 opacity-50" />
+          <p className="text-sm font-semibold text-foreground">Nenhum colaborador encontrado</p>
+          <p className="text-xs text-muted-foreground mt-1">Ajuste os filtros de busca ou cadastre novos operadores.</p>
+        </div>
+      )}
+
+      {/* Modal Visualizador de Foto Expandida */}
       {fotoModalAberta && (
         <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in"
           onClick={() => setFotoModalAberta(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
         >
           <div
+            className="relative max-w-sm w-full bg-card border border-border/80 rounded-2xl p-4 shadow-2xl space-y-3"
             onClick={(e) => e.stopPropagation()}
-            className="relative max-w-md w-full rounded-2xl bg-card border border-border/80 p-5 shadow-2xl text-center space-y-3"
           >
-            <div className="flex items-center justify-between border-b border-border/50 pb-2">
-              <div className="text-left">
-                <h3 className="font-bold text-base text-foreground">{fotoModalAberta.nome}</h3>
+            <div className="flex items-center justify-between border-b border-border/40 pb-2">
+              <div>
+                <h4 className="font-bold text-sm text-foreground">{fotoModalAberta.nome}</h4>
                 <p className="text-xs text-muted-foreground">{fotoModalAberta.cargo}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setFotoModalAberta(null)}
-                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"
+                className="p-1 rounded-lg text-muted-foreground hover:bg-muted"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="w-full aspect-square rounded-xl overflow-hidden border border-border shadow-inner bg-black/30">
-              <img
-                src={fotoModalAberta.url}
-                alt={fotoModalAberta.nome}
-                className="w-full h-full object-cover"
-              />
+            <div className="w-full aspect-square rounded-xl overflow-hidden border border-border/50 bg-black/20">
+              <img src={fotoModalAberta.url} alt={fotoModalAberta.nome} className="w-full h-full object-cover" />
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setFotoModalAberta(null)}
-              className="w-full rounded-xl"
-            >
-              Fechar
-            </Button>
           </div>
         </div>
       )}
 
-      {/* Modal de Cadastro Manual */}
+      {/* Modal de Cadastro Manual de Colaborador */}
       {modalNovoAberto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-md rounded-2xl border border-border/80 bg-card p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-border/50 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-                  <Plus className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-foreground">Novo Colaborador</h3>
-                  <p className="text-xs text-muted-foreground">Cadastre um operador ou reserve</p>
-                </div>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+          <div className="relative max-w-md w-full bg-card border border-border rounded-2xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="font-bold text-base text-foreground">Cadastrar Novo Colaborador</h3>
               <button
                 type="button"
                 onClick={() => setModalNovoAberto(false)}
-                className="rounded-lg p-1 text-muted-foreground hover:bg-muted"
+                className="p-1 rounded-lg text-muted-foreground hover:bg-muted"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCadastrarColaborador} className="space-y-3.5 text-xs">
+            <form onSubmit={handleCadastrarColaborador} className="space-y-3">
               <div>
-                <label className="block font-medium text-foreground mb-1">Nome Completo</label>
+                <label className="text-xs font-semibold text-foreground">Nome Completo</label>
                 <Input
+                  required
                   placeholder="Ex: João da Silva"
                   value={novoNome}
                   onChange={(e) => setNovoNome(e.target.value)}
-                  required
+                  className="mt-1"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="text-xs font-semibold text-foreground">Cargo / Função</label>
+                <Input
+                  placeholder="Ex: Operador de Máquinas"
+                  value={novoCargo}
+                  onChange={(e) => setNovoCargo(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-medium text-foreground mb-1">Cargo / Função</label>
-                  <Input
-                    placeholder="Ex: Operador Florestal"
-                    value={novoCargo}
-                    onChange={(e) => setNovoCargo(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block font-medium text-foreground mb-1">Telefone</label>
+                  <label className="text-xs font-semibold text-foreground">Telefone</label>
                   <Input
                     placeholder="(67) 99999-0000"
                     value={novoTelefone}
                     onChange={(e) => setNovoTelefone(e.target.value)}
+                    className="mt-1"
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block font-medium text-foreground mb-1">Unidade</label>
-                  <select
-                    value={novaUnidade}
-                    onChange={(e) => setNovaUnidade(e.target.value as any)}
-                    className="w-full h-10 px-3 rounded-xl border border-input bg-card text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                  >
-                    <option value="ribas">Ribas do Rio Pardo</option>
-                    <option value="agua_clara">Água Clara</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-medium text-foreground mb-1">Data de Admissão</label>
+                  <label className="text-xs font-semibold text-foreground">Data Admissão</label>
                   <Input
-                    placeholder="DD/MM/AAAA"
+                    placeholder="15/01/2023"
                     value={novaDataAdmissao}
                     onChange={(e) => setNovaDataAdmissao(e.target.value)}
+                    className="mt-1"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-medium text-foreground mb-1">Foto do Colaborador</label>
+                <label className="text-xs font-semibold text-foreground">Unidade Regional</label>
+                <select
+                  value={novaUnidade}
+                  onChange={(e) => setNovaUnidade(e.target.value as 'ribas' | 'agua_clara')}
+                  className="w-full h-10 mt-1 px-3 rounded-xl border border-input bg-card text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                >
+                  <option value="ribas">Ribas do Rio Pardo</option>
+                  <option value="agua_clara">Água Clara</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground">Foto do Colaborador (opcional)</label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleFotoUpload}
-                  className="w-full text-xs text-muted-foreground file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500/10 file:text-emerald-400 hover:file:bg-emerald-500/20"
+                  className="w-full mt-1 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                 />
               </div>
 
-              {novaFoto && (
-                <div className="flex items-center gap-3 p-2 rounded-xl border border-border bg-muted/20">
-                  <img src={novaFoto} alt="Prévia" className="w-12 h-12 rounded-xl object-cover border" />
-                  <span className="text-xs text-emerald-400 font-medium">Foto carregada com sucesso</span>
-                </div>
-              )}
-
-              <div className="pt-2 flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setModalNovoAberto(false)}
-                  className="rounded-xl"
-                >
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+                <Button type="button" variant="outline" size="sm" onClick={() => setModalNovoAberto(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl">
+                <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white">
                   Salvar Colaborador
                 </Button>
               </div>
@@ -681,115 +625,130 @@ export const CollaboratorsManagement: React.FC<CollaboratorsManagementProps> = (
         </div>
       )}
 
-      {/* Modal de Importação de Planilha Excel / CSV */}
+      {/* Modal de Importação de Planilha */}
       {modalExcelAberto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl border border-border/80 bg-card p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-border/50 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+          <div className="relative max-w-xl w-full bg-card border border-border rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-border pb-3 shrink-0">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-foreground">Importar Planilha de Colaboradores</h3>
-                  <p className="text-xs text-muted-foreground">Envie uma planilha CSV com colunas de Nome, Cargo e Unidade</p>
-                </div>
+                <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-bold text-base text-foreground">Importar Colaboradores via Planilha</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setModalExcelAberto(false)}
-                className="rounded-lg p-1 text-muted-foreground hover:bg-muted"
+                className="p-1 rounded-lg text-muted-foreground hover:bg-muted"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs">
+            <div className="space-y-3 overflow-y-auto pr-1">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/50 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Baixe a planilha modelo estruturada com as colunas certas:</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBaixarModelo}
+                  className="gap-1.5 h-8 text-xs shrink-0"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Modelo CSV</span>
+                </Button>
+              </div>
+
               <div
                 onClick={() => excelInputRef.current?.click()}
-                className="border-2 border-dashed border-emerald-500/40 hover:border-emerald-500 hover:bg-emerald-500/5 rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2"
+                className="border-2 border-dashed border-border/80 hover:border-emerald-500/60 rounded-2xl p-6 text-center cursor-pointer bg-card/40 transition-colors"
               >
-                <FileUp className="w-8 h-8 text-emerald-400" />
-                <div>
-                  <p className="font-bold text-foreground">Clique para selecionar o arquivo</p>
-                  <p className="text-muted-foreground text-[11px]">Formatos suportados: .csv ou .xlsx exportado em texto</p>
-                </div>
-                {excelArquivoNome && (
-                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[11px] font-bold">
-                    {excelArquivoNome}
-                  </span>
-                )}
                 <input
                   ref={excelInputRef}
                   type="file"
-                  accept=".csv,.txt"
-                  onChange={handleArquivoExcelUpload}
+                  accept=".csv,.tsv,.txt"
                   className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleProcessarArquivo(file);
+                  }}
                 />
+                <FileUp className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                <p className="text-xs font-bold text-foreground">
+                  {excelArquivoNome || 'Clique para selecionar o arquivo (.CSV ou .TXT)'}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Formatos delimitados por vírgula, ponto-e-vírgula ou tabulação
+                </p>
               </div>
 
               {isProcessandoExcel && (
-                <div className="flex items-center justify-center gap-2 text-emerald-400 py-2">
+                <div className="flex items-center justify-center gap-2 py-4 text-xs text-emerald-400">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Processando linhas da planilha...</span>
+                  <span>Processando arquivo de colaboradores...</span>
                 </div>
               )}
 
               {excelErro && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                   <span>{excelErro}</span>
-                </div>
-              )}
-
-              {excelImportSucesso && (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>Colaboradores importados com sucesso!</span>
                 </div>
               )}
 
               {excelPreview.length > 0 && (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-muted-foreground text-xs font-semibold">
-                    <span>Prévia ({excelPreview.length} colaboradores identificados):</span>
+                  <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+                    <span>Prévia dos Colaboradores ({excelPreview.length} encontrados):</span>
                   </div>
-                  <div className="max-h-48 overflow-y-auto rounded-xl border border-border p-2 space-y-1.5 bg-muted/20">
-                    {excelPreview.slice(0, 10).map((c, i) => (
-                      <div key={i} className="flex items-center justify-between p-1.5 rounded-lg bg-card text-[11px]">
-                        <span className="font-bold text-foreground truncate max-w-[150px]">{c.nome}</span>
-                        <span className="text-muted-foreground truncate max-w-[120px]">{c.cargo}</span>
-                        <span className="text-emerald-400">{c.unidade}</span>
+                  <div className="max-h-48 overflow-y-auto space-y-1 rounded-xl border border-border p-2 bg-muted/20">
+                    {excelPreview.slice(0, 15).map((col, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-2 rounded-lg bg-card/60 border border-border/40 text-xs"
+                      >
+                        <div>
+                          <p className="font-bold text-foreground">{col.nome}</p>
+                          <p className="text-[11px] text-muted-foreground">{col.cargo}</p>
+                        </div>
+                        <Badge variant="outline" className="text-[10px]">
+                          {col.unidade}
+                        </Badge>
                       </div>
                     ))}
-                    {excelPreview.length > 10 && (
-                      <p className="text-center text-[10px] text-muted-foreground pt-1">
-                        + {excelPreview.length - 10} outros registros...
+                    {excelPreview.length > 15 && (
+                      <p className="text-center text-[11px] text-muted-foreground py-1">
+                        + {excelPreview.length - 15} outros colaboradores inclusos
                       </p>
                     )}
                   </div>
                 </div>
               )}
 
-              <div className="pt-2 flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setModalExcelAberto(false)}
-                  className="rounded-xl"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="button"
-                  disabled={excelPreview.length === 0 || isProcessandoExcel}
-                  onClick={handleConfirmarImportacaoExcel}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl gap-1.5"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Confirmar e Adicionar</span>
-                </Button>
-              </div>
+              {excelImportSucesso && (
+                <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Colaboradores importados com sucesso!</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border shrink-0">
+              <Button type="button" variant="outline" size="sm" onClick={() => setModalExcelAberto(false)}>
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={excelPreview.length === 0 || isProcessandoExcel || excelImportSucesso}
+                onClick={handleConfirmarImportacao}
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
+              >
+                <FileCheck className="w-4 h-4" />
+                <span>Confirmar e Importar ({excelPreview.length})</span>
+              </Button>
             </div>
           </div>
         </div>
